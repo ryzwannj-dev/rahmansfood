@@ -42,4 +42,7 @@ dependencies {
     androidTestImplementation(libs.espresso.core)
     implementation("com.google.android.material:material:1.11.0")
     implementation("com.intuit.sdp:sdp-android:1.1.1")
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation ("com.google.code.gson:gson:2.12.1")
+    implementation ("com.squareup.retrofit2:converter-gson:2.0.0")
 }
