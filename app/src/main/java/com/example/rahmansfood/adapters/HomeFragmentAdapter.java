@@ -50,6 +50,9 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
         Produit produit = produits.get(position);
 
         holder.tvName.setText(produit.getNom());
+
+        holder.tvName.setSelected(true);
+
         holder.tvType.setText(produit.getCategorie());
         holder.tvPrice.setText(produit.getPrix() + "€");
 
