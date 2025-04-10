@@ -28,6 +28,8 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
     public interface OnItemClickListener {
         void onAddClick(int position);
         void onEditClick(int position);
+
+        void onDeleteClick(int position);
     }
 
     private OnItemClickListener listener;
@@ -43,7 +45,7 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvName, tvType, tvPrice, tvIngredientsTitle, tvIngredientsList;
         View expandableLayout, expandableLayoutButton;
-        Button btnAdd, btnEdit, btnClose;
+        Button btnAdd, btnEdit, btnDelete;
         long lastClickTime = 0;
 
         public ViewHolder(View itemView) {
@@ -57,7 +59,7 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
             tvIngredientsList = expandableLayout.findViewById(R.id.tvIngredientsList);
             btnAdd = itemView.findViewById(R.id.btnAdd);
             btnEdit = itemView.findViewById(R.id.btnEdit);
-            btnClose = itemView.findViewById(R.id.btnClose);
+            btnDelete = itemView.findViewById(R.id.btnDelete);
         }
     }
 
@@ -98,7 +100,7 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
 
         holder.tvIngredientsTitle.setVisibility(showIngredients ? View.VISIBLE : View.GONE);
         holder.tvIngredientsList.setVisibility(showIngredients ? View.VISIBLE : View.GONE);
-
+        holder.btnEdit.setVisibility(showIngredients ? View.VISIBLE : View.GONE);
         if (showIngredients) {
             StringBuilder sb = new StringBuilder();
             if (produit.getIngredients() != null && !produit.getIngredients().isEmpty()) {
@@ -108,6 +110,7 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
                 }
             } else {
                 sb.append("Aucun ingrédient renseigné.");
+                holder.btnEdit.setVisibility(View.GONE);
             }
             holder.tvIngredientsList.setText(sb.toString());
         }
@@ -173,9 +176,10 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
             }
         });
 
-        holder.btnClose.setOnClickListener(v -> {
-            expandedPosition = -1;
-            notifyItemChanged(position);
+        holder.btnDelete.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onDeleteClick(position);
+            }
         });
     }
 
