@@ -36,7 +36,6 @@ public class HomeFragment extends Fragment {
     private static final String ARG_PARAM2 = "param2";
 
     private ProgressBar loadingProgressBar;
-
     private RecyclerView recyclerViewProduits;
 
     private String mParam1;
@@ -147,8 +146,5 @@ public class HomeFragment extends Fragment {
                 });
             }
         });
-
     }
-
-
 }

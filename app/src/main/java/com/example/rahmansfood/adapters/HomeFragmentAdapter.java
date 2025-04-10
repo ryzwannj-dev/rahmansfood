@@ -3,17 +3,13 @@ package com.example.rahmansfood.adapters;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
-import android.transition.AutoTransition;
-import android.transition.Transition;
-import android.transition.TransitionManager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.rahmansfood.R;
@@ -24,22 +20,18 @@ import java.util.List;
 public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapter.ViewHolder> {
 
     private final List<Produit> produits;
-
-    boolean isAnimating = false;
-
     private int expandedPosition = -1;
-
+    private static final String TAG = "HomeFragmentAdapter";
+    private static final long DEBOUNCE_INTERVAL = 500; // 500ms délai anti-rebond
 
     public HomeFragmentAdapter(List<Produit> produits) {
         this.produits = produits;
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvType, tvPrice;
-        TextView tvIngredientsTitle, tvIngredientsList;
+        TextView tvName, tvType, tvPrice, tvIngredientsTitle, tvIngredientsList;
         View expandableLayout;
-
-        boolean isAnimating = false;
+        long lastClickTime = 0;
 
         public ViewHolder(View itemView) {
             super(itemView);
@@ -47,40 +39,46 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
             tvType = itemView.findViewById(R.id.tvType);
             tvPrice = itemView.findViewById(R.id.tvPrice);
             expandableLayout = itemView.findViewById(R.id.expandableLayout);
-            tvIngredientsTitle = expandableLayout.findViewById(R.id.expandableLayout).findViewById(R.id.tvIngredientsTitle);
-            tvIngredientsList = expandableLayout.findViewById(R.id.expandableLayout).findViewById(R.id.tvIngredientsList);
+            tvIngredientsTitle = expandableLayout.findViewById(R.id.tvIngredientsTitle);
+            tvIngredientsList = expandableLayout.findViewById(R.id.tvIngredientsList);
         }
     }
 
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.home_food_card, parent, false);
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.home_food_card, parent, false);
         return new ViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Produit produit = produits.get(position);
-
         boolean isExpanded = position == expandedPosition;
-        holder.expandableLayout.setVisibility(isExpanded ? View.VISIBLE : View.GONE);
 
+        // Configurer les données de base
         holder.tvName.setText(produit.getNom());
-        holder.tvName.setSelected(true);
         holder.tvType.setText(produit.getCategorie());
-        holder.tvPrice.setText(produit.getPrix() + "€");
+        holder.tvPrice.setText(String.format("%s€", produit.getPrix()));
 
-        // Vérification de la catégorie
+        // Gestion des ingrédients
+        setupIngredients(holder, produit);
+
+        // Gestion de l'état d'expansion
+        manageExpansionState(holder, position, isExpanded);
+
+        // Configurer le clic
+        setupItemClick(holder, position, isExpanded);
+    }
+
+    private void setupIngredients(ViewHolder holder, Produit produit) {
         String categorie = produit.getCategorie();
         boolean showIngredients = !("Boissons".equalsIgnoreCase(categorie) || "Dessert".equalsIgnoreCase(categorie));
 
-        // Masquer/afficher la section ingrédients selon la catégorie
         holder.tvIngredientsTitle.setVisibility(showIngredients ? View.VISIBLE : View.GONE);
         holder.tvIngredientsList.setVisibility(showIngredients ? View.VISIBLE : View.GONE);
 
-
-        // Préparation de la liste des ingrédients seulement si nécessaire
         if (showIngredients) {
             StringBuilder sb = new StringBuilder();
             if (produit.getIngredients() != null && !produit.getIngredients().isEmpty()) {
@@ -93,68 +91,94 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
             }
             holder.tvIngredientsList.setText(sb.toString());
         }
+    }
 
-        // Gestion du clic
+    private void manageExpansionState(ViewHolder holder, int position, boolean isExpanded) {
+        // Mesurer la hauteur nécessaire avant toute interaction
+        holder.expandableLayout.measure(
+                View.MeasureSpec.makeMeasureSpec(holder.itemView.getWidth(), View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        );
+
+        if (isExpanded) {
+            holder.expandableLayout.setVisibility(View.VISIBLE);
+            holder.expandableLayout.getLayoutParams().height = ViewGroup.LayoutParams.WRAP_CONTENT;
+        } else {
+            holder.expandableLayout.setVisibility(View.GONE);
+            holder.expandableLayout.getLayoutParams().height = 0;
+        }
+    }
+
+    private void setupItemClick(ViewHolder holder, int position, boolean isExpanded) {
         holder.itemView.setOnClickListener(v -> {
-            if (!showIngredients || holder.isAnimating) {
+            // Anti-rebond
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - holder.lastClickTime < DEBOUNCE_INTERVAL) {
                 return;
             }
+            holder.lastClickTime = currentTime;
 
+            // Gestion de l'état d'expansion
             int previousExpandedPosition = expandedPosition;
             expandedPosition = isExpanded ? -1 : position;
 
-            holder.isAnimating = true;
-
-            int initialHeight = holder.expandableLayout.getHeight();
-            int targetHeight;
-
-            if (previousExpandedPosition != -1) {
+            // Fermer l'élément précédemment étendu
+            if (previousExpandedPosition != -1 && previousExpandedPosition != position) {
                 notifyItemChanged(previousExpandedPosition);
             }
 
-            if (expandedPosition != -1) {
-                notifyItemChanged(expandedPosition);
-            }
-
-            if (holder.expandableLayout.getVisibility() == View.VISIBLE) {
-                // Fermeture
-                targetHeight = 0;
+            // Animer le changement
+            if (isExpanded) {
+                collapseView(holder.expandableLayout);
             } else {
-                // Ouverture - mesure la hauteur réelle
-                holder.expandableLayout.measure(
-                        View.MeasureSpec.makeMeasureSpec(holder.itemView.getWidth(), View.MeasureSpec.EXACTLY),
-                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
-                targetHeight = holder.expandableLayout.getMeasuredHeight();
-                holder.expandableLayout.getLayoutParams().height = 0;
-                holder.expandableLayout.setVisibility(View.VISIBLE);
+                expandView(holder.expandableLayout);
             }
-
-
-            ValueAnimator animator = ValueAnimator.ofInt(initialHeight, targetHeight);
-            animator.addUpdateListener(valueAnimator -> {
-                int val = (Integer) valueAnimator.getAnimatedValue();
-                ViewGroup.LayoutParams layoutParams = holder.expandableLayout.getLayoutParams();
-                layoutParams.height = val;
-                holder.expandableLayout.setLayoutParams(layoutParams);
-            });
-
-            animator.setDuration(300);
-            animator.setInterpolator(new FastOutSlowInInterpolator());
-            animator.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    holder.isAnimating = false;
-                    if (targetHeight == 0) {
-                        holder.expandableLayout.setVisibility(View.GONE);
-                    }
-                }
-            });
-            animator.start();
         });
+    }
+
+    private void expandView(final View view) {
+        view.setVisibility(View.VISIBLE);
+        view.measure(
+                View.MeasureSpec.makeMeasureSpec(view.getWidth(), View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        );
+        final int targetHeight = view.getMeasuredHeight();
+
+        ValueAnimator animator = ValueAnimator.ofInt(0, targetHeight);
+        animator.addUpdateListener(animation -> {
+            view.getLayoutParams().height = (int) animation.getAnimatedValue();
+            view.requestLayout();
+        });
+        animator.setDuration(200);
+        animator.start();
+    }
+
+    private void collapseView(final View view) {
+        int initialHeight = view.getHeight();
+        ValueAnimator animator = ValueAnimator.ofInt(initialHeight, 0);
+        animator.addUpdateListener(animation -> {
+            view.getLayoutParams().height = (int) animation.getAnimatedValue();
+            view.requestLayout();
+        });
+        animator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                view.setVisibility(View.GONE);
+            }
+        });
+        animator.setDuration(200);
+        animator.start();
     }
 
     @Override
     public int getItemCount() {
-        return produits.size();
+        return produits != null ? produits.size() : 0;
+    }
+
+    public void updateData(List<Produit> newProduits) {
+        this.produits.clear();
+        this.produits.addAll(newProduits);
+        this.expandedPosition = -1; // Réinitialiser l'état d'expansion
+        notifyDataSetChanged();
     }
 }
