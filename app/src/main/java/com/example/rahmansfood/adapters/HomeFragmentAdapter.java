@@ -3,6 +3,7 @@ package com.example.rahmansfood.adapters;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,12 +24,11 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
     private final List<Produit> produits;
     private int expandedPosition = -1;
     private static final String TAG = "HomeFragmentAdapter";
-    private static final long DEBOUNCE_INTERVAL = 500; // 500ms délai anti-rebond
+    private static final long DEBOUNCE_INTERVAL = 500;
 
     public interface OnItemClickListener {
         void onAddClick(int position);
         void onEditClick(int position);
-
         void onDeleteClick(int position);
     }
 
@@ -78,6 +78,7 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
 
         // Configurer les données de base
         holder.tvName.setText(produit.getNom());
+        setupMarqueeEffect(holder.tvName);
         holder.tvType.setText(produit.getCategorie());
         holder.tvPrice.setText(String.format("%s€", produit.getPrix()));
 
@@ -94,6 +95,14 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
         setupButtons(holder, position);
     }
 
+    private void setupMarqueeEffect(TextView textView) {
+        textView.setSelected(true);
+        textView.setSingleLine(true);
+        textView.setEllipsize(TextUtils.TruncateAt.MARQUEE);
+        textView.setMarqueeRepeatLimit(-1);
+        textView.setHorizontallyScrolling(true);
+    }
+
     private void setupIngredients(ViewHolder holder, Produit produit) {
         String categorie = produit.getCategorie();
         boolean showIngredients = !("Boissons".equalsIgnoreCase(categorie) || "Dessert".equalsIgnoreCase(categorie));
@@ -101,6 +110,7 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
         holder.tvIngredientsTitle.setVisibility(showIngredients ? View.VISIBLE : View.GONE);
         holder.tvIngredientsList.setVisibility(showIngredients ? View.VISIBLE : View.GONE);
         holder.btnEdit.setVisibility(showIngredients ? View.VISIBLE : View.GONE);
+
         if (showIngredients) {
             StringBuilder sb = new StringBuilder();
             if (produit.getIngredients() != null && !produit.getIngredients().isEmpty()) {
@@ -117,7 +127,6 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
     }
 
     private void manageExpansionState(ViewHolder holder, int position, boolean isExpanded) {
-        // Mesurer la hauteur nécessaire avant toute interaction
         holder.expandableLayout.measure(
                 View.MeasureSpec.makeMeasureSpec(holder.itemView.getWidth(), View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
@@ -138,22 +147,18 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
 
     private void setupItemClick(ViewHolder holder, int position, boolean isExpanded) {
         holder.itemView.setOnClickListener(v -> {
-            // Anti-rebond
             long currentTime = System.currentTimeMillis();
             if (currentTime - holder.lastClickTime < DEBOUNCE_INTERVAL) {
                 return;
             }
             holder.lastClickTime = currentTime;
 
-            // Gestion de l'état d'expansion
             int previousExpandedPosition = expandedPosition;
 
             if (isExpanded) {
-                // On ferme l'item déjà ouvert
                 expandedPosition = -1;
                 notifyItemChanged(position);
             } else {
-                // On ouvre un nouvel item
                 expandedPosition = position;
                 notifyItemChanged(position);
                 if (previousExpandedPosition != -1) {
@@ -191,7 +196,7 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
     public void updateData(List<Produit> newProduits) {
         this.produits.clear();
         this.produits.addAll(newProduits);
-        this.expandedPosition = -1; // Réinitialiser l'état d'expansion
+        this.expandedPosition = -1;
         notifyDataSetChanged();
     }
 }
