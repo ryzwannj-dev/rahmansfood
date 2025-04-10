@@ -1,0 +1,288 @@
+[33mcommit 477da6051ff7310f76a6f120f1d8583381953f87[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: ryzwannj-dev <ryzwannj@gmail.com>
+Date:   Thu Apr 10 15:00:37 2025 +0200
+
+    Sauvegarde des modifications (Animation bug) avant checkout
+
+[1mdiff --git a/app/src/main/java/com/example/rahmansfood/adapters/HomeFragmentAdapter.java b/app/src/main/java/com/example/rahmansfood/adapters/HomeFragmentAdapter.java[m
+[1mindex a986b79..31ba066 100644[m
+[1m--- a/app/src/main/java/com/example/rahmansfood/adapters/HomeFragmentAdapter.java[m
+[1m+++ b/app/src/main/java/com/example/rahmansfood/adapters/HomeFragmentAdapter.java[m
+[36m@@ -3,17 +3,13 @@[m [mpackage com.example.rahmansfood.adapters;[m
+ import android.animation.Animator;[m
+ import android.animation.AnimatorListenerAdapter;[m
+ import android.animation.ValueAnimator;[m
+[31m-import android.transition.AutoTransition;[m
+[31m-import android.transition.Transition;[m
+[31m-import android.transition.TransitionManager;[m
+[32m+[m[32mimport android.util.Log;[m
+ import android.view.LayoutInflater;[m
+ import android.view.View;[m
+ import android.view.ViewGroup;[m
+[31m-import android.widget.ImageView;[m
+ import android.widget.TextView;[m
+ [m
+ import androidx.annotation.NonNull;[m
+[31m-import androidx.interpolator.view.animation.FastOutSlowInInterpolator;[m
+ import androidx.recyclerview.widget.RecyclerView;[m
+ [m
+ import com.example.rahmansfood.R;[m
+[36m@@ -24,22 +20,18 @@[m [mimport java.util.List;[m
+ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapter.ViewHolder> {[m
+ [m
+     private final List<Produit> produits;[m
+[31m-[m
+[31m-    boolean isAnimating = false;[m
+[31m-[m
+     private int expandedPosition = -1;[m
+[31m-[m
+[32m+[m[32m    private static final String TAG = "HomeFragmentAdapter";[m
+[32m+[m[32m    private static final long DEBOUNCE_INTERVAL = 500; // 500ms délai anti-rebond[m
+ [m
+     public HomeFragmentAdapter(List<Produit> produits) {[m
+         this.produits = produits;[m
+     }[m
+ [m
+     public static class ViewHolder extends RecyclerView.ViewHolder {[m
+[31m-        TextView tvName, tvType, tvPrice;[m
+[31m-        TextView tvIngredientsTitle, tvIngredientsList;[m
+[32m+[m[32m        TextView tvName, tvType, tvPrice, tvIngredientsTitle, tvIngredientsList;[m
+         View expandableLayout;[m
+[31m-[m
+[31m-        boolean isAnimating = false;[m
+[32m+[m[32m        long lastClickTime = 0;[m
+ [m
+         public ViewHolder(View itemView) {[m
+             super(itemView);[m
+[36m@@ -47,40 +39,46 @@[m [mpublic class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte[m
+             tvType = itemView.findViewById(R.id.tvType);[m
+             tvPrice = itemView.findViewById(R.id.tvPrice);[m
+             expandableLayout = itemView.findViewById(R.id.expandableLayout);[m
+[31m-            tvIngredientsTitle = expandableLayout.findViewById(R.id.expandableLayout).findViewById(R.id.tvIngredientsTitle);[m
+[31m-            tvIngredientsList = expandableLayout.findViewById(R.id.expandableLayout).findViewById(R.id.tvIngredientsList);[m
+[32m+[m[32m            tvIngredientsTitle = expandableLayout.findViewById(R.id.tvIngredientsTitle);[m
+[32m+[m[32m            tvIngredientsList = expandableLayout.findViewById(R.id.tvIngredientsList);[m
+         }[m
+     }[m
+ [m
+     @NonNull[m
+     @Override[m
+     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {[m
+[31m-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.home_food_card, parent, false);[m
+[32m+[m[32m        View view = LayoutInflater.from(parent.getContext())[m
+[32m+[m[32m                .inflate(R.layout.home_food_card, parent, false);[m
+         return new ViewHolder(view);[m
+     }[m
+ [m
+     @Override[m
+     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {[m
+         Produit produit = produits.get(position);[m
+[31m-[m
+         boolean isExpanded = position == expandedPosition;[m
+[31m-        holder.expandableLayout.setVisibility(isExpanded ? View.VISIBLE : View.GONE);[m
+ [m
+[32m+[m[32m        // Configurer les données de base[m
+         holder.tvName.setText(produit.getNom());[m
+[31m-        holder.tvName.setSelected(true);[m
+         holder.tvType.setText(produit.getCategorie());[m
+[31m-        holder.tvPrice.setText(produit.getPrix() + "€");[m
+[32m+[m[32m        holder.tvPrice.setText(String.format("%s€", produit.getPrix()));[m
+[32m+[m
+[32m+[m[32m        // Gestion des ingrédients[m
+[32m+[m[32m        setupIngredients(holder, produit);[m
+[32m+[m
+[32m+[m[32m        // Gestion de l'état d'expansion[m
+[32m+[m[32m        manageExpansionState(holder, position, isExpanded);[m
+ [m
+[31m-        // Vérification de la catégorie[m
+[32m+[m[32m        // Configurer le clic[m
+[32m+[m[32m        setupItemClick(holder, position, isExpanded);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    private void setupIngredients(ViewHolder holder, Produit produit) {[m
+         String categorie = produit.getCategorie();[m
+         boolean showIngredients = !("Boissons".equalsIgnoreCase(categorie) || "Dessert".equalsIgnoreCase(categorie));[m
+ [m
+[31m-        // Masquer/afficher la section ingrédients selon la catégorie[m
+         holder.tvIngredientsTitle.setVisibility(showIngredients ? View.VISIBLE : View.GONE);[m
+         holder.tvIngredientsList.setVisibility(showIngredients ? View.VISIBLE : View.GONE);[m
+ [m
+[31m-[m
+[31m-        // Préparation de la liste des ingrédients seulement si nécessaire[m
+         if (showIngredients) {[m
+             StringBuilder sb = new StringBuilder();[m
+             if (produit.getIngredients() != null && !produit.getIngredients().isEmpty()) {[m
+[36m@@ -93,68 +91,94 @@[m [mpublic class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte[m
+             }[m
+             holder.tvIngredientsList.setText(sb.toString());[m
+         }[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    private void manageExpansionState(ViewHolder holder, int position, boolean isExpanded) {[m
+[32m+[m[32m        // Mesurer la hauteur nécessaire avant toute interaction[m
+[32m+[m[32m        holder.expandableLayout.measure([m
+[32m+[m[32m                View.MeasureSpec.makeMeasureSpec(holder.itemView.getWidth(), View.MeasureSpec.EXACTLY),[m
+[32m+[m[32m                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)[m
+[32m+[m[32m        );[m
+[32m+[m
+[32m+[m[32m        if (isExpanded) {[m
+[32m+[m[32m            holder.expandableLayout.setVisibility(View.VISIBLE);[m
+[32m+[m[32m            holder.expandableLayout.getLayoutParams().height = ViewGroup.LayoutParams.WRAP_CONTENT;[m
+[32m+[m[32m        } else {[m
+[32m+[m[32m            holder.expandableLayout.setVisibility(View.GONE);[m
+[32m+[m[32m            holder.expandableLayout.getLayoutParams().height = 0;[m
+[32m+[m[32m        }[m
+[32m+[m[32m    }[m
+ [m
+[31m-        // Gestion du clic[m
+[32m+[m[32m    private void setupItemClick(ViewHolder holder, int position, boolean isExpanded) {[m
+         holder.itemView.setOnClickListener(v -> {[m
+[31m-            if (!showIngredients || holder.isAnimating) {[m
+[32m+[m[32m            // Anti-rebond[m
+[32m+[m[32m            long currentTime = System.currentTimeMillis();[m
+[32m+[m[32m            if (currentTime - holder.lastClickTime < DEBOUNCE_INTERVAL) {[m
+                 return;[m
+             }[m
+[32m+[m[32m            holder.lastClickTime = currentTime;[m
+ [m
+[32m+[m[32m            // Gestion de l'état d'expansion[m
+             int previousExpandedPosition = expandedPosition;[m
+             expandedPosition = isExpanded ? -1 : position;[m
+ [m
+[31m-            holder.isAnimating = true;[m
+[31m-[m
+[31m-            int initialHeight = holder.expandableLayout.getHeight();[m
+[31m-            int targetHeight;[m
+[31m-[m
+[31m-            if (previousExpandedPosition != -1) {[m
+[32m+[m[32m            // Fermer l'élément précédemment étendu[m
+[32m+[m[32m            if (previousExpandedPosition != -1 && previousExpandedPosition != position) {[m
+                 notifyItemChanged(previousExpandedPosition);[m
+             }[m
+ [m
+[31m-            if (expandedPosition != -1) {[m
+[31m-                notifyItemChanged(expandedPosition);[m
+[31m-            }[m
+[31m-[m
+[31m-            if (holder.expandableLayout.getVisibility() == View.VISIBLE) {[m
+[31m-                // Fermeture[m
+[31m-                targetHeight = 0;[m
+[32m+[m[32m            // Animer le changement[m
+[32m+[m[32m            if (isExpanded) {[m
+[32m+[m[32m                collapseView(holder.expandableLayout);[m
+             } else {[m
+[31m-                // Ouverture - mesure la hauteur réelle[m
+[31m-                holder.expandableLayout.measure([m
+[31m-                        View.MeasureSpec.makeMeasureSpec(holder.itemView.getWidth(), View.MeasureSpec.EXACTLY),[m
+[31m-                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));[m
+[31m-                targetHeight = holder.expandableLayout.getMeasuredHeight();[m
+[31m-                holder.expandableLayout.getLayoutParams().height = 0;[m
+[31m-                holder.expandableLayout.setVisibility(View.VISIBLE);[m
+[32m+[m[32m                expandView(holder.expandableLayout);[m
+             }[m
+[32m+[m[32m        });[m
+[32m+[m[32m    }[m
+ [m
+[32m+[m[32m    private void expandView(final View view) {[m
+[32m+[m[32m        view.setVisibility(View.VISIBLE);[m
+[32m+[m[32m        view.measure([m
+[32m+[m[32m                View.MeasureSpec.makeMeasureSpec(view.getWidth(), View.MeasureSpec.EXACTLY),[m
+[32m+[m[32m                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)[m
+[32m+[m[32m        );[m
+[32m+[m[32m        final int targetHeight = view.getMeasuredHeight();[m
+[32m+[m
+[32m+[m[32m        ValueAnimator animator = ValueAnimator.ofInt(0, targetHeight);[m
+[32m+[m[32m        animator.addUpdateListener(animation -> {[m
+[32m+[m[32m            view.getLayoutParams().height = (int) animation.getAnimatedValue();[m
+[32m+[m[32m            view.requestLayout();[m
+[32m+[m[32m        });[m
+[32m+[m[32m        animator.setDuration(200);[m
+[32m+[m[32m        animator.start();[m
+[32m+[m[32m    }[m
+ [m
+[31m-            ValueAnimator animator = ValueAnimator.ofInt(initialHeight, targetHeight);[m
+[31m-            animator.addUpdateListener(valueAnimator -> {[m
+[31m-                int val = (Integer) valueAnimator.getAnimatedValue();[m
+[31m-                ViewGroup.LayoutParams layoutParams = holder.expandableLayout.getLayoutParams();[m
+[31m-                layoutParams.height = val;[m
+[31m-                holder.expandableLayout.setLayoutParams(layoutParams);[m
+[31m-            });[m
+[31m-[m
+[31m-            animator.setDuration(300);[m
+[31m-            animator.setInterpolator(new FastOutSlowInInterpolator());[m
+[31m-            animator.addListener(new AnimatorListenerAdapter() {[m
+[31m-                @Override[m
+[31m-                public void onAnimationEnd(Animator animation) {[m
+[31m-                    holder.isAnimating = false;[m
+[31m-                    if (targetHeight == 0) {[m
+[31m-                        holder.expandableLayout.setVisibility(View.GONE);[m
+[31m-                    }[m
+[31m-                }[m
+[31m-            });[m
+[31m-            animator.start();[m
+[32m+[m[32m    private void collapseView(final View view) {[m
+[32m+[m[32m        int initialHeight = view.getHeight();[m
+[32m+[m[32m        ValueAnimator animator = ValueAnimator.ofInt(initialHeight, 0);[m
+[32m+[m[32m        animator.addUpdateListener(animation -> {[m
+[32m+[m[32m            view.getLayoutParams().height = (int) animation.getAnimatedValue();[m
+[32m+[m[32m            view.requestLayout();[m
+[32m+[m[32m        });[m
+[32m+[m[32m        animator.addListener(new AnimatorListenerAdapter() {[m
+[32m+[m[32m            @Override[m
+[32m+[m[32m            public void onAnimationEnd(Animator animation) {[m
+[32m+[m[32m                view.setVisibility(View.GONE);[m
+[32m+[m[32m            }[m
+         });[m
+[32m+[m[32m        animator.setDuration(200);[m
+[32m+[m[32m        animator.start();[m
+     }[m
+ [m
+     @Override[m
+     public int getItemCount() {[m
+[31m-        return produits.size();[m
+[32m+[m[32m        return produits != null ? produits.size() : 0;[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public void updateData(List<Produit> newProduits) {[m
+[32m+[m[32m        this.produits.clear();[m
+[32m+[m[32m        this.produits.addAll(newProduits);[m
+[32m+[m[32m        this.expandedPosition = -1; // Réinitialiser l'état d'expansion[m
+[32m+[m[32m        notifyDataSetChanged();[m
+     }[m
+[31m-}[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/app/src/main/java/com/example/rahmansfood/fragments/HomeFragment.java b/app/src/main/java/com/example/rahmansfood/fragments/HomeFragment.java[m
+[1mindex 79c126a..320e28d 100644[m
+[1m--- a/app/src/main/java/com/example/rahmansfood/fragments/HomeFragment.java[m
+[1m+++ b/app/src/main/java/com/example/rahmansfood/fragments/HomeFragment.java[m
+[36m@@ -36,7 +36,6 @@[m [mpublic class HomeFragment extends Fragment {[m
+     private static final String ARG_PARAM2 = "param2";[m
+ [m
+     private ProgressBar loadingProgressBar;[m
+[31m-[m
+     private RecyclerView recyclerViewProduits;[m
+ [m
+     private String mParam1;[m
+[36m@@ -147,8 +146,5 @@[m [mpublic class HomeFragment extends Fragment {[m
+                 });[m
+             }[m
+         });[m
+[31m-[m
+     }[m
+[31m-[m
+[31m-[m
+ }[m
+[1mdiff --git a/app/src/main/res/layout/home_food_card.xml b/app/src/main/res/layout/home_food_card.xml[m
+[1mindex 33c9307..9aee44f 100644[m
+[1m--- a/app/src/main/res/layout/home_food_card.xml[m
+[1m+++ b/app/src/main/res/layout/home_food_card.xml[m
+[36m@@ -9,7 +9,7 @@[m
+         android:id="@+id/cardView"[m
+         android:layout_width="match_parent"[m
+         android:layout_height="wrap_content"[m
+[31m-        android:layout_margin="@dimen/_5sdp"[m
+[32m+[m[32m        android:layout_margin="@dimen/_7sdp"[m
+         app:cardBackgroundColor="@color/background"[m
+         app:cardCornerRadius="12dp"[m
+         app:cardElevation="4dp"[m
