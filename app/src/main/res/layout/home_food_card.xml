@@ -13,6 +13,8 @@
         app:cardBackgroundColor="@color/background"
         app:cardCornerRadius="12dp"
         app:cardElevation="4dp"
+        android:animateLayoutChanges="false"
+        android:clipToPadding="false"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
