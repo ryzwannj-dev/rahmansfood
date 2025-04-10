@@ -120,38 +120,45 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
 
             // Gestion de l'état d'expansion
             int previousExpandedPosition = expandedPosition;
-            expandedPosition = isExpanded ? -1 : position;
 
-            // Fermer l'élément précédemment étendu
-            if (previousExpandedPosition != -1 && previousExpandedPosition != position) {
-                notifyItemChanged(previousExpandedPosition);
-            }
-
-            // Animer le changement
             if (isExpanded) {
-                collapseView(holder.expandableLayout);
+                // On ferme l'item déjà ouvert
+                expandedPosition = -1;
+                notifyItemChanged(position);
             } else {
-                expandView(holder.expandableLayout);
+                // On ouvre un nouvel item
+                expandedPosition = position;
+                notifyItemChanged(position);
+                if (previousExpandedPosition != -1) {
+                    notifyItemChanged(previousExpandedPosition);
+                }
             }
         });
     }
 
     private void expandView(final View view) {
         view.setVisibility(View.VISIBLE);
-        view.measure(
-                View.MeasureSpec.makeMeasureSpec(view.getWidth(), View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-        );
-        final int targetHeight = view.getMeasuredHeight();
 
-        ValueAnimator animator = ValueAnimator.ofInt(0, targetHeight);
-        animator.addUpdateListener(animation -> {
-            view.getLayoutParams().height = (int) animation.getAnimatedValue();
+        view.post(() -> {
+            view.getLayoutParams().height = 0;
+            view.setVisibility(View.VISIBLE);
             view.requestLayout();
+            view.measure(
+                    View.MeasureSpec.makeMeasureSpec(((View) view.getParent()).getWidth(), View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+            );
+            final int targetHeight = view.getMeasuredHeight();
+
+            ValueAnimator animator = ValueAnimator.ofInt(0, targetHeight);
+            animator.addUpdateListener(animation -> {
+                view.getLayoutParams().height = (int) animation.getAnimatedValue();
+                view.requestLayout();
+            });
+            animator.setDuration(200);
+            animator.start();
         });
-        animator.setDuration(200);
-        animator.start();
     }
+
 
     private void collapseView(final View view) {
         int initialHeight = view.getHeight();
