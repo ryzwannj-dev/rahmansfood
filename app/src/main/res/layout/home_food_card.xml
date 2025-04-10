@@ -71,8 +71,7 @@
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- Section extensible (cachée par défaut) -->
-
+            <!-- Section extensible pour les ingrédients -->
             <LinearLayout
                 android:id="@+id/expandableLayout"
                 android:layout_width="match_parent"
@@ -98,6 +97,47 @@
                     android:textStyle="italic" />
             </LinearLayout>
 
+            <!-- Section extensible pour les boutons -->
+            <LinearLayout
+                android:id="@+id/expandableLayoutButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingTop="12dp"
+                android:visibility="gone">
+
+                <Button
+                    android:id="@+id/btnAdd"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/_30sdp"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/button_add_item"
+                    android:textColor="@color/white"
+                    app:backgroundTint="@null"
+                    android:text="Ajouter" />
+
+                <Button
+                    android:id="@+id/btnEdit"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/_30sdp"
+                    android:layout_weight="1"
+                    app:backgroundTint="@null"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/button_edit_item"
+                    android:textColor="@color/white"
+                    android:text="Modifier" />
+
+                <Button
+                    android:id="@+id/btnClose"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/_30sdp"
+                    android:layout_weight="1"
+                    app:backgroundTint="@null"
+                    android:textColor="@color/white"
+                    android:background="@drawable/button_edit_item"
+                    android:text="Refermer" />
+            </LinearLayout>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 </androidx.constraintlayout.widget.ConstraintLayout>

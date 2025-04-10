@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -24,13 +25,25 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
     private static final String TAG = "HomeFragmentAdapter";
     private static final long DEBOUNCE_INTERVAL = 500; // 500ms délai anti-rebond
 
+    public interface OnItemClickListener {
+        void onAddClick(int position);
+        void onEditClick(int position);
+    }
+
+    private OnItemClickListener listener;
+
+    public void setOnItemClickListener(OnItemClickListener listener) {
+        this.listener = listener;
+    }
+
     public HomeFragmentAdapter(List<Produit> produits) {
         this.produits = produits;
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvName, tvType, tvPrice, tvIngredientsTitle, tvIngredientsList;
-        View expandableLayout;
+        View expandableLayout, expandableLayoutButton;
+        Button btnAdd, btnEdit, btnClose;
         long lastClickTime = 0;
 
         public ViewHolder(View itemView) {
@@ -39,8 +52,12 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
             tvType = itemView.findViewById(R.id.tvType);
             tvPrice = itemView.findViewById(R.id.tvPrice);
             expandableLayout = itemView.findViewById(R.id.expandableLayout);
+            expandableLayoutButton = itemView.findViewById(R.id.expandableLayoutButton);
             tvIngredientsTitle = expandableLayout.findViewById(R.id.tvIngredientsTitle);
             tvIngredientsList = expandableLayout.findViewById(R.id.tvIngredientsList);
+            btnAdd = itemView.findViewById(R.id.btnAdd);
+            btnEdit = itemView.findViewById(R.id.btnEdit);
+            btnClose = itemView.findViewById(R.id.btnClose);
         }
     }
 
@@ -68,8 +85,11 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
         // Gestion de l'état d'expansion
         manageExpansionState(holder, position, isExpanded);
 
-        // Configurer le clic
+        // Configurer le clic sur l'item
         setupItemClick(holder, position, isExpanded);
+
+        // Configurer les boutons
+        setupButtons(holder, position);
     }
 
     private void setupIngredients(ViewHolder holder, Produit produit) {
@@ -103,9 +123,13 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
         if (isExpanded) {
             holder.expandableLayout.setVisibility(View.VISIBLE);
             holder.expandableLayout.getLayoutParams().height = ViewGroup.LayoutParams.WRAP_CONTENT;
+            holder.expandableLayoutButton.setVisibility(View.VISIBLE);
+            holder.expandableLayoutButton.getLayoutParams().height = ViewGroup.LayoutParams.WRAP_CONTENT;
         } else {
             holder.expandableLayout.setVisibility(View.GONE);
             holder.expandableLayout.getLayoutParams().height = 0;
+            holder.expandableLayoutButton.setVisibility(View.GONE);
+            holder.expandableLayoutButton.getLayoutParams().height = 0;
         }
     }
 
@@ -136,45 +160,23 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
         });
     }
 
-    private void expandView(final View view) {
-        view.setVisibility(View.VISIBLE);
-
-        view.post(() -> {
-            view.getLayoutParams().height = 0;
-            view.setVisibility(View.VISIBLE);
-            view.requestLayout();
-            view.measure(
-                    View.MeasureSpec.makeMeasureSpec(((View) view.getParent()).getWidth(), View.MeasureSpec.EXACTLY),
-                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-            );
-            final int targetHeight = view.getMeasuredHeight();
-
-            ValueAnimator animator = ValueAnimator.ofInt(0, targetHeight);
-            animator.addUpdateListener(animation -> {
-                view.getLayoutParams().height = (int) animation.getAnimatedValue();
-                view.requestLayout();
-            });
-            animator.setDuration(200);
-            animator.start();
-        });
-    }
-
-
-    private void collapseView(final View view) {
-        int initialHeight = view.getHeight();
-        ValueAnimator animator = ValueAnimator.ofInt(initialHeight, 0);
-        animator.addUpdateListener(animation -> {
-            view.getLayoutParams().height = (int) animation.getAnimatedValue();
-            view.requestLayout();
-        });
-        animator.addListener(new AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                view.setVisibility(View.GONE);
+    private void setupButtons(ViewHolder holder, int position) {
+        holder.btnAdd.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onAddClick(position);
             }
         });
-        animator.setDuration(200);
-        animator.start();
+
+        holder.btnEdit.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onEditClick(position);
+            }
+        });
+
+        holder.btnClose.setOnClickListener(v -> {
+            expandedPosition = -1;
+            notifyItemChanged(position);
+        });
     }
 
     @Override
