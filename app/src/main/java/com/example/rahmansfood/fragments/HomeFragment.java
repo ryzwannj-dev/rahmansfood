@@ -1,7 +1,7 @@
 package com.example.rahmansfood.fragments;
 
 import android.app.AlertDialog;
-import android.content.Context;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -10,6 +10,10 @@ import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.cardview.widget.CardView;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -23,6 +27,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -32,58 +37,97 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class HomeFragment extends Fragment {
 
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
     private ProgressBar loadingProgressBar;
     private RecyclerView recyclerViewProduits;
 
-    private String mParam1;
-    private String mParam2;
+    private CardView pizza_card, burger_card, tex_mex_card, dessert_card, boisson_card, tacos_card, sandwich_card, all_card;
+
+    private AtomicBoolean pizza_card_selected = new AtomicBoolean(false);
+    private AtomicBoolean burger_card_selected = new AtomicBoolean(false);
+    private AtomicBoolean tex_mex_card_selected = new AtomicBoolean(false);
+    private AtomicBoolean dessert_card_selected = new AtomicBoolean(false);
+    private AtomicBoolean boisson_card_selected = new AtomicBoolean(false);
+    private AtomicBoolean tacos_card_selected = new AtomicBoolean(false);
+    private AtomicBoolean sandwich_card_selected = new AtomicBoolean(false);
+    private AtomicBoolean all_card_selected = new AtomicBoolean(false);
 
     public HomeFragment() {
-        // Required empty public constructor
-    }
-
-    public static HomeFragment newInstance(String param1, String param2) {
-        HomeFragment fragment = new HomeFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.fragment_home, container, false);
+    }
 
-        View view = inflater.inflate(R.layout.fragment_home, container, false);
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
         loadingProgressBar = view.findViewById(R.id.loadingProgressBar);
-
         recyclerViewProduits = view.findViewById(R.id.recyclerViewProduits);
         recyclerViewProduits.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        return view;
+        pizza_card = view.findViewById(R.id.pizza_card);
+        burger_card = view.findViewById(R.id.burger_card);
+        tex_mex_card = view.findViewById(R.id.tex_mex_card);
+        dessert_card = view.findViewById(R.id.dessert_card);
+        boisson_card = view.findViewById(R.id.boisson_card);
+        tacos_card = view.findViewById(R.id.tacos_card);
+        sandwich_card = view.findViewById(R.id.sandwiches_card);
+        all_card = view.findViewById(R.id.all_card);
+
+        // Mise en place des clics avec sélection unique
+        pizza_card.setOnClickListener(v -> selectCategoryAndReload(pizza_card, pizza_card_selected, "pizza"));
+        burger_card.setOnClickListener(v -> selectCategoryAndReload(burger_card, burger_card_selected, "burger"));
+        tex_mex_card.setOnClickListener(v -> selectCategoryAndReload(tex_mex_card, tex_mex_card_selected, "texmex"));
+        dessert_card.setOnClickListener(v -> selectCategoryAndReload(dessert_card, dessert_card_selected, "dessert"));
+        boisson_card.setOnClickListener(v -> selectCategoryAndReload(boisson_card, boisson_card_selected, "boisson"));
+        tacos_card.setOnClickListener(v -> selectCategoryAndReload(tacos_card, tacos_card_selected, "tacos"));
+        sandwich_card.setOnClickListener(v -> selectCategoryAndReload(sandwich_card, sandwich_card_selected, "sandwich"));
+        all_card.setOnClickListener(v -> selectCategoryAndReload(all_card, all_card_selected, "all"));
+
+        // Sélectionner automatiquement la carte "All" au début
+        selectCategoryAndReload(all_card, all_card_selected, "all");
+
+        reloadData("all");
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        reloadData();
+        reloadData("all");
     }
 
-    private void reloadData() {
+    private void selectCategoryAndReload(CardView selectedCard, AtomicBoolean selectedFlag, String category) {
+        // Désélectionner toutes les autres cartes
+        pizza_card_selected.set(false);
+        burger_card_selected.set(false);
+        tex_mex_card_selected.set(false);
+        dessert_card_selected.set(false);
+        boisson_card_selected.set(false);
+        tacos_card_selected.set(false);
+        sandwich_card_selected.set(false);
+        all_card_selected.set(false);
 
+        pizza_card.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.background));
+        burger_card.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.background));
+        tex_mex_card.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.background));
+        dessert_card.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.background));
+        boisson_card.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.background));
+        tacos_card.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.background));
+        sandwich_card.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.background));
+        all_card.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.background));
+
+        // Activer la carte cliquée
+        selectedCard.setCardBackgroundColor(Color.RED);
+        selectedFlag.set(true);
+
+        // Recharger les produits en fonction de la catégorie
+        reloadData(category);
+    }
+
+    private void reloadData(String category) {
         loadingProgressBar.setVisibility(View.VISIBLE);
 
         Retrofit retrofit = new Retrofit.Builder()
@@ -92,59 +136,87 @@ public class HomeFragment extends Fragment {
                 .build();
 
         ProduitApiService service = retrofit.create(ProduitApiService.class);
+        Call<Object> call = (Call<Object>) getCallBasedOnCategory(service, category);
 
-        Call<ApiResponse> call = service.getAllProduits();
-        call.enqueue(new Callback<ApiResponse>() {
+        // Traitement du Call avec Callback spécifique
+        call.enqueue(new Callback<>() {
             @Override
-            public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
+            public void onResponse(Call<Object> call, Response<Object> response) {
                 loadingProgressBar.setVisibility(View.GONE);
+
                 if (response.isSuccessful() && response.body() != null) {
-                    ApiResponse apiResponse = response.body();
-
-                    // Utilisez getData() pour obtenir la List<Produit>
-                    List<Produit> produits = apiResponse.getData();
-
-                    if (produits != null && !produits.isEmpty()) {
-                        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-                        String jsonProduits = gson.toJson(produits);
-                        Log.i("json_response", jsonProduits);
-
-                        recyclerViewProduits.setAdapter(new HomeFragmentAdapter(produits));
-                    } else {
-                        Toast.makeText(getContext(), "Aucun produit trouvé", Toast.LENGTH_SHORT).show();
-                    }
+                    handleResponse(response);
                 } else {
-                    // Gestion des erreurs HTTP (404, 500, etc.)
-                    Toast.makeText(getContext(), "Erreur de serveur: " + response.code(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Erreur serveur : " + response.code(), Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<ApiResponse> call, Throwable t) {
+            public void onFailure(Call<Object> call, Throwable t) {
                 loadingProgressBar.setVisibility(View.GONE);
-                if (!isAdded()) {
-                    Log.w("API_ERROR", "Fragment détaché, on annule le traitement.");
-                    return;
-                }
-
-                requireActivity().runOnUiThread(() -> {
-                    if (!isAdded()) return; // double sécurité
-
-                    AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-                    builder.setTitle("Erreur")
-                            .setMessage("Une erreur est survenue :\n" + t.getMessage())
-                            .setCancelable(false)
-                            .setPositiveButton("Recharger", (dialog, which) -> {
-                                reloadData(); // relance l'appel
-                            })
-                            .setNegativeButton("Quitter", (dialog, which) -> {
-                                requireActivity().finish(); // ferme l’app
-                            });
-
-                    AlertDialog alert = builder.create();
-                    alert.show();
-                });
+                if (!isAdded()) return;
+                Log.e("response", t.getMessage());
+                showErrorDialog(t.getMessage(), category);
             }
+        });
+    }
+
+    private Call<?> getCallBasedOnCategory(ProduitApiService service, String category) {
+        switch (category) {
+            case "tacos":
+                return service.getAllTacos();
+            case "pizza":
+                return service.getAllPizzas();
+            case "burger":
+                return service.getAllBurgers();
+            case "texmex":
+                return service.getAllTexMex();
+            case "dessert":
+                return service.getAllDessert();
+            case "boisson":
+                return service.getAllBoissons();
+            case "assiette":
+                return service.getAllAssiettes();
+            case "sandwich":
+                return service.getAllSandwiches();
+            default:
+                return service.getAllProduits();
+        }
+    }
+
+    private void handleResponse(Response<Object> response) {
+        if (response.body() instanceof ApiResponse) {
+            // Traitement pour ApiResponse
+            ApiResponse apiResponse = (ApiResponse) response.body();
+            List<Produit> produits = apiResponse.getData();
+            displayProducts(produits);
+        } else if (response.body() instanceof List) {
+            // Traitement pour List<Produit>
+            List<Produit> produits = (List<Produit>) response.body();
+            displayProducts(produits);
+        }
+    }
+
+    private void displayProducts(List<Produit> produits) {
+        if (produits != null && !produits.isEmpty()) {
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            Log.i("json_response", gson.toJson(produits));
+            recyclerViewProduits.setAdapter(new HomeFragmentAdapter(produits));
+        } else {
+            Toast.makeText(getContext(), "Aucun produit trouvé", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void showErrorDialog(String message, String category) {
+        requireActivity().runOnUiThread(() -> {
+            if (!isAdded()) return;
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("Erreur")
+                    .setMessage("Une erreur est survenue :\n" + message)
+                    .setCancelable(false)
+                    .setPositiveButton("Recharger", (dialog, which) -> reloadData(category))
+                    .setNegativeButton("Quitter", (dialog, which) -> requireActivity().finish())
+                    .show();
         });
     }
 }

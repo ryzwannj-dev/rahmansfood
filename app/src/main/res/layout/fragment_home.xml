@@ -89,9 +89,44 @@
 
                 <!-- CardView pour Pizza avec alignement horizontal -->
                 <androidx.cardview.widget.CardView
+                    android:id="@+id/all_card"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_marginHorizontal="@dimen/_5sdp"
+                    app:cardBackgroundColor="@color/background"
+                    app:cardCornerRadius="@dimen/_10sdp">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="@dimen/_5sdp">
+
+                        <ImageView
+                            android:layout_width="@dimen/_15sdp"
+                            android:layout_height="@dimen/_15sdp"
+                            android:layout_marginEnd="@dimen/_5sdp"
+                            android:src="@drawable/ic_database" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Tout"
+                            android:textColor="@color/white"
+                            android:textSize="@dimen/_12sdp" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- CardView pour Pizza avec alignement horizontal -->
+                <androidx.cardview.widget.CardView
                     android:id="@+id/pizza_card"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:layout_marginHorizontal="@dimen/_5sdp"
                     app:cardBackgroundColor="@color/background"
                     app:cardCornerRadius="@dimen/_10sdp">
@@ -125,6 +160,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="@dimen/_5sdp"
                     app:cardBackgroundColor="@color/background"
+                    android:clickable="true"
+                    android:focusable="true"
                     app:cardCornerRadius="@dimen/_10sdp">
 
                     <LinearLayout
@@ -156,6 +193,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="@dimen/_5sdp"
                     app:cardBackgroundColor="@color/background"
+                    android:clickable="true"
+                    android:focusable="true"
                     app:cardCornerRadius="@dimen/_10sdp">
 
                     <LinearLayout
@@ -187,6 +226,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="@dimen/_5sdp"
                     app:cardBackgroundColor="@color/background"
+                    android:clickable="true"
+                    android:focusable="true"
                     app:cardCornerRadius="@dimen/_10sdp">
 
                     <LinearLayout
@@ -218,6 +259,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="@dimen/_5sdp"
                     app:cardBackgroundColor="@color/background"
+                    android:clickable="true"
+                    android:focusable="true"
                     app:cardCornerRadius="@dimen/_10sdp">
 
                     <LinearLayout
@@ -249,6 +292,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="@dimen/_5sdp"
                     app:cardBackgroundColor="@color/background"
+                    android:clickable="true"
+                    android:focusable="true"
                     app:cardCornerRadius="@dimen/_10sdp">
 
                     <LinearLayout
@@ -280,6 +325,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="@dimen/_5sdp"
                     app:cardBackgroundColor="@color/background"
+                    android:clickable="true"
+                    android:focusable="true"
                     app:cardCornerRadius="@dimen/_10sdp">
 
                     <LinearLayout
