@@ -285,6 +285,38 @@
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/assiette_card"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_marginHorizontal="@dimen/_5sdp"
+                    app:cardBackgroundColor="@color/background"
+                    app:cardCornerRadius="@dimen/_10sdp">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="@dimen/_5sdp">
+
+                        <ImageView
+                            android:layout_width="@dimen/_15sdp"
+                            android:layout_height="@dimen/_15sdp"
+                            android:layout_marginEnd="@dimen/_5sdp"
+                            android:src="@drawable/ic_assiette" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Assiette"
+                            android:textColor="@color/white"
+                            android:textSize="@dimen/_12sdp" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
                 <!-- CardView pour Boisson -->
                 <androidx.cardview.widget.CardView
                     android:id="@+id/boisson_card"

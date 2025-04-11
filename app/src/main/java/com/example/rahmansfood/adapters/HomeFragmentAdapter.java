@@ -3,6 +3,7 @@ package com.example.rahmansfood.adapters;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
+import android.graphics.Color;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -12,6 +13,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.rahmansfood.R;
@@ -105,6 +107,7 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
 
     private void setupIngredients(ViewHolder holder, Produit produit) {
         String categorie = produit.getCategorie();
+        // Modifier cette condition pour inclure "Tacos" ou exclure seulement "Boissons" et "Dessert"
         boolean showIngredients = !("Boissons".equalsIgnoreCase(categorie) || "Dessert".equalsIgnoreCase(categorie));
 
         holder.tvIngredientsTitle.setVisibility(showIngredients ? View.VISIBLE : View.GONE);
@@ -112,6 +115,12 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
         holder.btnEdit.setVisibility(showIngredients ? View.VISIBLE : View.GONE);
 
         if (showIngredients) {
+            if ("Tacos".equalsIgnoreCase(categorie)) {
+                holder.btnEdit.setText("Composer");
+                holder.btnEdit.setBackgroundResource(R.drawable.button_compose_item);
+            } else {
+                holder.btnEdit.setText("Modifier"); // Remettre le texte par défaut
+            }
             StringBuilder sb = new StringBuilder();
             if (produit.getIngredients() != null && !produit.getIngredients().isEmpty()) {
                 for (int i = 0; i < produit.getIngredients().size(); i++) {
@@ -119,8 +128,15 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
                     if (i < produit.getIngredients().size() - 1) sb.append("\n");
                 }
             } else {
-                sb.append("Aucun ingrédient renseigné.");
-                holder.btnEdit.setVisibility(View.GONE);
+                if ("Tacos".equalsIgnoreCase(categorie)) {
+                    sb.append("Composition selon les attentes du client.");
+                } else {
+                    sb.append("Aucun ingrédient renseigné.");
+                }
+                // Même s'il n'y a pas d'ingrédients, on veut peut-être quand même afficher le bouton pour Tacos
+                if (!"Tacos".equalsIgnoreCase(categorie)) {
+                    holder.btnEdit.setVisibility(View.GONE);
+                }
             }
             holder.tvIngredientsList.setText(sb.toString());
         }

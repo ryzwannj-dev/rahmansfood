@@ -6,4 +6,6 @@
     <color name="red">#db1b0d</color>
     <color name="background">#141414</color>
     <color name="secondbackground">#333331</color>
+    <color name="blue">#333fe8</color>
+    <color name="light_gray">#828282</color>
 </resources>

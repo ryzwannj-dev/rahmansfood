@@ -40,7 +40,7 @@ public class HomeFragment extends Fragment {
     private ProgressBar loadingProgressBar;
     private RecyclerView recyclerViewProduits;
 
-    private CardView pizza_card, burger_card, tex_mex_card, dessert_card, boisson_card, tacos_card, sandwich_card, all_card;
+    private CardView pizza_card, burger_card, tex_mex_card, dessert_card, boisson_card, tacos_card, sandwich_card, all_card, assiette_card;
 
     private AtomicBoolean pizza_card_selected = new AtomicBoolean(false);
     private AtomicBoolean burger_card_selected = new AtomicBoolean(false);
@@ -50,6 +50,7 @@ public class HomeFragment extends Fragment {
     private AtomicBoolean tacos_card_selected = new AtomicBoolean(false);
     private AtomicBoolean sandwich_card_selected = new AtomicBoolean(false);
     private AtomicBoolean all_card_selected = new AtomicBoolean(false);
+    private AtomicBoolean assiette_card_selected = new AtomicBoolean(false);
 
     public HomeFragment() {
     }
@@ -76,6 +77,7 @@ public class HomeFragment extends Fragment {
         tacos_card = view.findViewById(R.id.tacos_card);
         sandwich_card = view.findViewById(R.id.sandwiches_card);
         all_card = view.findViewById(R.id.all_card);
+        assiette_card = view.findViewById(R.id.assiette_card);
 
         // Mise en place des clics avec sélection unique
         pizza_card.setOnClickListener(v -> selectCategoryAndReload(pizza_card, pizza_card_selected, "pizza"));
@@ -86,6 +88,7 @@ public class HomeFragment extends Fragment {
         tacos_card.setOnClickListener(v -> selectCategoryAndReload(tacos_card, tacos_card_selected, "tacos"));
         sandwich_card.setOnClickListener(v -> selectCategoryAndReload(sandwich_card, sandwich_card_selected, "sandwich"));
         all_card.setOnClickListener(v -> selectCategoryAndReload(all_card, all_card_selected, "all"));
+        assiette_card.setOnClickListener(v -> selectCategoryAndReload(assiette_card, assiette_card_selected, "assiette"));
 
         // Sélectionner automatiquement la carte "All" au début
         selectCategoryAndReload(all_card, all_card_selected, "all");
@@ -109,6 +112,7 @@ public class HomeFragment extends Fragment {
         tacos_card_selected.set(false);
         sandwich_card_selected.set(false);
         all_card_selected.set(false);
+        assiette_card_selected.set(false);
 
         pizza_card.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.background));
         burger_card.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.background));
@@ -118,6 +122,8 @@ public class HomeFragment extends Fragment {
         tacos_card.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.background));
         sandwich_card.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.background));
         all_card.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.background));
+        assiette_card.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.background));
+
 
         // Activer la carte cliquée
         selectedCard.setCardBackgroundColor(Color.RED);
