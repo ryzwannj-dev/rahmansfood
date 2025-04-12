@@ -9,6 +9,9 @@ public class Ingredient {
     @SerializedName("nom")
     private String nom;
 
+    @SerializedName("masse")
+    private float masse;
+
     @SerializedName("quantite")
     private int quantite;
 
@@ -16,4 +19,8 @@ public class Ingredient {
     public String getId() { return id; }
     public String getNom() { return nom; }
     public int getQuantite() { return quantite; }
+
+    public float getMasse(){
+        return masse;
+    }
 }

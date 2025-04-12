@@ -2,6 +2,7 @@ package com.example.rahmansfood.api;
 
 import com.example.rahmansfood.models.ApiResponse;
 import com.example.rahmansfood.models.Produit;
+import com.example.rahmansfood.models.TypeResponse;
 
 import java.util.List;
 
@@ -36,10 +37,8 @@ public interface ProduitApiService {
     @GET("get_all_tacos")
     Call<List<Produit>> getAllTacos();
 
-
-
-
-
+    @GET("ingredients/types")
+    Call<TypeResponse> getTypes();
 
 
 }

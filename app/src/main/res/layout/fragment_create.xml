@@ -11,34 +11,17 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <ImageButton
-            android:id="@+id/back_button"
-            android:layout_width="@dimen/_30sdp"
-            android:layout_height="@dimen/_30sdp"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="32dp"
-            android:adjustViewBounds="true"
-            android:background="@color/secondbackground"
-            android:scaleType="centerCrop"
-            android:src="@drawable/ic_back"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:srcCompat="@drawable/ic_back"
-            app:tint="@color/orange" />
-
         <TextView
             android:id="@+id/textView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="20dp"
             android:layout_marginTop="16dp"
             android:paddingLeft="@dimen/_10sdp"
             android:text="Créer des Plats"
-            android:textColor="@color/orange"
+            android:textColor="@color/light_gray"
             android:textSize="@dimen/_35sdp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintStart_toEndOf="@+id/back_button"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <ImageView
@@ -51,7 +34,7 @@
             app:layout_constraintHorizontal_bias="0.476"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/textView"
-            app:tint="@color/background" />
+            app:tint="@color/orange" />
 
         <LinearLayout
             android:id="@+id/linearLayout"
@@ -329,9 +312,9 @@
             android:textAlignment="center"
             android:padding="@dimen/_3sdp"
             android:text="Ajouter, Modifier ou Supprimer pour mieux composer"
-            android:textColor="@color/orange"
-            android:textSize="@dimen/_20sdp"
-            android:textStyle="bold"
+            android:textColor="@color/light_gray"
+            android:textSize="@dimen/_18sdp"
+            android:textStyle="italic"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/imageView3" />
