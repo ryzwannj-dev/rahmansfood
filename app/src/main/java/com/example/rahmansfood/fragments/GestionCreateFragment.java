@@ -129,9 +129,119 @@ public class GestionCreateFragment extends Fragment {
             title2.setText("Ajouter un nouveau supplément à la liste");
             editPrix.setVisibility(View.VISIBLE);
 
+            btnAdd.setOnClickListener(v -> {
+                String nom = editNom.getText().toString().trim();
+                String prixStr = editPrix.getText().toString().trim();
+
+                if (TextUtils.isEmpty(nom) || TextUtils.isEmpty(prixStr)) {
+                    showAlert("Champs manquants", "Veuillez remplir tous les champs");
+                    return;
+                }
+
+                float prix;
+                try {
+                    prix = Float.parseFloat(prixStr);
+                } catch (NumberFormatException e) {
+                    showAlert("Format invalide", "Veuillez entrer un prix valide");
+                    return;
+                }
+
+                String message = "Voulez-vous vraiment ajouter ce supplément ?\n\n" +
+                        "Nom : " + nom + "\n" +
+                        "Prix : " + prix + " €";
+
+                new android.app.AlertDialog.Builder(requireContext())
+                        .setTitle("Confirmation")
+                        .setMessage(message)
+                        .setPositiveButton("Oui", (dialog, which) -> {
+                            Retrofit retrofit = new Retrofit.Builder()
+                                    .baseUrl("http://192.168.1.155/rahmanfood_api/")
+                                    .addConverterFactory(GsonConverterFactory.create())
+                                    .build();
+
+                            ProduitApiService service = retrofit.create(ProduitApiService.class);
+                            Call<Void> call = service.addIngredient(nom, prix);
+
+                            call.enqueue(new Callback<Void>() {
+                                @Override
+                                public void onResponse(Call<Void> call, Response<Void> response) {
+                                    if (response.isSuccessful()) {
+                                        showAlert("Succès", "Supplément ajouté avec succès");
+                                        resetInputs();
+                                    } else {
+                                        showAlert("Erreur", "Échec de l'ajout du supplément");
+                                    }
+                                }
+
+                                @Override
+                                public void onFailure(Call<Void> call, Throwable t) {
+                                    showAlert("Erreur réseau", "Impossible de se connecter : " + t.getMessage());
+                                }
+                            });
+                        })
+                        .setNegativeButton("Annuler", null)
+                        .show();
+            });
+
+
+
         } else if ("gratine".equals(CrudSecondPartActivity.getType())) {
             title2.setText("Ajouter un nouveau supplément gratiné à la liste");
             editPrix.setVisibility(View.VISIBLE);
+
+            btnAdd.setOnClickListener(v -> {
+                String nom = editNom.getText().toString().trim();
+                String prixStr = editPrix.getText().toString().trim();
+
+                if (TextUtils.isEmpty(nom) || TextUtils.isEmpty(prixStr)) {
+                    showAlert("Champs manquants", "Veuillez remplir tous les champs");
+                    return;
+                }
+
+                float prix;
+                try {
+                    prix = Float.parseFloat(prixStr);
+                } catch (NumberFormatException e) {
+                    showAlert("Format invalide", "Veuillez entrer un prix valide");
+                    return;
+                }
+
+                String message = "Voulez-vous vraiment ajouter ce supplément gratiné ?\n\n" +
+                        "Nom : " + nom + "\n" +
+                        "Prix : " + prix + " €";
+
+                new android.app.AlertDialog.Builder(requireContext())
+                        .setTitle("Confirmation")
+                        .setMessage(message)
+                        .setPositiveButton("Oui", (dialog, which) -> {
+                            Retrofit retrofit = new Retrofit.Builder()
+                                    .baseUrl("http://192.168.1.155/rahmanfood_api/")
+                                    .addConverterFactory(GsonConverterFactory.create())
+                                    .build();
+
+                            ProduitApiService service = retrofit.create(ProduitApiService.class);
+                            Call<Void> call = service.addSupplementGratine(nom, prix); // Ajoute cette méthode dans ton interface
+
+                            call.enqueue(new Callback<Void>() {
+                                @Override
+                                public void onResponse(Call<Void> call, Response<Void> response) {
+                                    if (response.isSuccessful()) {
+                                        showAlert("Succès", "Supplément gratiné ajouté avec succès");
+                                        resetInputs();
+                                    } else {
+                                        showAlert("Erreur", "Échec de l'ajout du supplément gratiné");
+                                    }
+                                }
+
+                                @Override
+                                public void onFailure(Call<Void> call, Throwable t) {
+                                    showAlert("Erreur réseau", "Impossible de se connecter : " + t.getMessage());
+                                }
+                            });
+                        })
+                        .setNegativeButton("Annuler", null)
+                        .show();
+            });
 
         } else {
             title2.setText("Ajouter un élément");

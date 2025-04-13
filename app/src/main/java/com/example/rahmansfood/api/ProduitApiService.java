@@ -52,5 +52,19 @@ public interface ProduitApiService {
             @Field("id_type_ingredient") String idTypeIngredient
     );
 
+    @FormUrlEncoded
+    @POST("add_supplement")
+    Call<Void> addIngredient(
+            @Field("nom") String nom,
+            @Field("prix") float prix
+    );
+
+    @FormUrlEncoded
+    @POST("add_supplement_gratine")
+    Call<Void> addSupplementGratine(
+            @Field("nom") String nom,
+            @Field("prix") float prix
+    );
+
 
 }

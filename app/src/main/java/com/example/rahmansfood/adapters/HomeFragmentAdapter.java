@@ -1,31 +1,27 @@
 package com.example.rahmansfood.adapters;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.animation.ValueAnimator;
-import android.graphics.Color;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.Filterable;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.rahmansfood.R;
 import com.example.rahmansfood.models.Produit;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapter.ViewHolder> {
+public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapter.ViewHolder> implements Filterable {
 
-    private final List<Produit> produits;
+    private final List<Produit> produits;       // liste filtrée
+    private final List<Produit> allProduits;    // liste complète
     private int expandedPosition = -1;
-    private static final String TAG = "HomeFragmentAdapter";
     private static final long DEBOUNCE_INTERVAL = 500;
 
     public interface OnItemClickListener {
@@ -41,7 +37,8 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
     }
 
     public HomeFragmentAdapter(List<Produit> produits) {
-        this.produits = produits;
+        this.produits = new ArrayList<>(produits);
+        this.allProduits = new ArrayList<>(produits);
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
@@ -78,22 +75,14 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
         Produit produit = produits.get(position);
         boolean isExpanded = position == expandedPosition;
 
-        // Configurer les données de base
         holder.tvName.setText(produit.getNom());
         setupMarqueeEffect(holder.tvName);
         holder.tvType.setText(produit.getCategorie());
         holder.tvPrice.setText(String.format("%s€", produit.getPrix()));
 
-        // Gestion des ingrédients
         setupIngredients(holder, produit);
-
-        // Gestion de l'état d'expansion
         manageExpansionState(holder, position, isExpanded);
-
-        // Configurer le clic sur l'item
         setupItemClick(holder, position, isExpanded);
-
-        // Configurer les boutons
         setupButtons(holder, position);
     }
 
@@ -107,7 +96,6 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
 
     private void setupIngredients(ViewHolder holder, Produit produit) {
         String categorie = produit.getCategorie();
-        // Modifier cette condition pour inclure "Tacos" ou exclure seulement "Boissons" et "Dessert"
         boolean showIngredients = !("Boissons".equalsIgnoreCase(categorie) || "Dessert".equalsIgnoreCase(categorie));
 
         holder.tvIngredientsTitle.setVisibility(showIngredients ? View.VISIBLE : View.GONE);
@@ -119,8 +107,9 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
                 holder.btnEdit.setText("Composer");
                 holder.btnEdit.setBackgroundResource(R.drawable.button_compose_item);
             } else {
-                holder.btnEdit.setText("Modifier"); // Remettre le texte par défaut
+                holder.btnEdit.setText("Modifier");
             }
+
             StringBuilder sb = new StringBuilder();
             if (produit.getIngredients() != null && !produit.getIngredients().isEmpty()) {
                 for (int i = 0; i < produit.getIngredients().size(); i++) {
@@ -132,9 +121,6 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
                     sb.append("Composition selon les attentes du client.");
                 } else {
                     sb.append("Aucun ingrédient renseigné.");
-                }
-                // Même s'il n'y a pas d'ingrédients, on veut peut-être quand même afficher le bouton pour Tacos
-                if (!"Tacos".equalsIgnoreCase(categorie)) {
                     holder.btnEdit.setVisibility(View.GONE);
                 }
             }
@@ -164,9 +150,7 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
     private void setupItemClick(ViewHolder holder, int position, boolean isExpanded) {
         holder.itemView.setOnClickListener(v -> {
             long currentTime = System.currentTimeMillis();
-            if (currentTime - holder.lastClickTime < DEBOUNCE_INTERVAL) {
-                return;
-            }
+            if (currentTime - holder.lastClickTime < DEBOUNCE_INTERVAL) return;
             holder.lastClickTime = currentTime;
 
             int previousExpandedPosition = expandedPosition;
@@ -186,21 +170,15 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
 
     private void setupButtons(ViewHolder holder, int position) {
         holder.btnAdd.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onAddClick(position);
-            }
+            if (listener != null) listener.onAddClick(position);
         });
 
         holder.btnEdit.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onEditClick(position);
-            }
+            if (listener != null) listener.onEditClick(position);
         });
 
         holder.btnDelete.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onDeleteClick(position);
-            }
+            if (listener != null) listener.onDeleteClick(position);
         });
     }
 
@@ -212,7 +190,59 @@ public class HomeFragmentAdapter extends RecyclerView.Adapter<HomeFragmentAdapte
     public void updateData(List<Produit> newProduits) {
         this.produits.clear();
         this.produits.addAll(newProduits);
+        this.allProduits.clear();
+        this.allProduits.addAll(newProduits);
         this.expandedPosition = -1;
         notifyDataSetChanged();
+    }
+
+    public void filter(String query) {
+        expandedPosition = -1;
+        produits.clear();
+
+        if (TextUtils.isEmpty(query)) {
+            produits.addAll(allProduits);
+        } else {
+            String lowerQuery = query.toLowerCase().trim();
+            for (Produit produit : allProduits) {
+                if (produit.getNom().toLowerCase().contains(lowerQuery)
+                        || produit.getCategorie().toLowerCase().contains(lowerQuery)) {
+                    produits.add(produit);
+                }
+            }
+        }
+        notifyDataSetChanged();
+    }
+
+    @Override
+    public android.widget.Filter getFilter() {
+        return new android.widget.Filter() {
+            @Override
+            protected FilterResults performFiltering(CharSequence constraint) {
+                List<Produit> filteredList = new ArrayList<>();
+                if (TextUtils.isEmpty(constraint)) {
+                    filteredList.addAll(allProduits);
+                } else {
+                    String filterPattern = constraint.toString().toLowerCase().trim();
+                    for (Produit produit : allProduits) {
+                        if (produit.getNom().toLowerCase().contains(filterPattern)
+                                || produit.getCategorie().toLowerCase().contains(filterPattern)) {
+                            filteredList.add(produit);
+                        }
+                    }
+                }
+
+                FilterResults results = new FilterResults();
+                results.values = filteredList;
+                return results;
+            }
+
+            @Override
+            protected void publishResults(CharSequence constraint, FilterResults results) {
+                produits.clear();
+                produits.addAll((List<Produit>) results.values);
+                notifyDataSetChanged();
+            }
+        };
     }
 }
