@@ -2,12 +2,16 @@ package com.example.rahmansfood.api;
 
 import com.example.rahmansfood.models.ApiResponse;
 import com.example.rahmansfood.models.Produit;
+import com.example.rahmansfood.models.Type;
 import com.example.rahmansfood.models.TypeResponse;
 
 import java.util.List;
 
 import retrofit2.Call;
+import retrofit2.http.Field;
+import retrofit2.http.FormUrlEncoded;
 import retrofit2.http.GET;
+import retrofit2.http.POST;
 
 public interface ProduitApiService {
     @GET("get_all_products")
@@ -37,8 +41,16 @@ public interface ProduitApiService {
     @GET("get_all_tacos")
     Call<List<Produit>> getAllTacos();
 
-    @GET("ingredients/types")
-    Call<TypeResponse> getTypes();
+    @GET("get_all_types")
+    Call<List<Type>> getTypes();
+
+    @FormUrlEncoded
+    @POST("add_ingredient")
+    Call<Void> addIngredient(
+            @Field("nom") String nom,
+            @Field("masse") String masse,
+            @Field("id_type_ingredient") String idTypeIngredient
+    );
 
 
 }

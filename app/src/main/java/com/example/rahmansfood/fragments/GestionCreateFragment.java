@@ -1,13 +1,11 @@
 package com.example.rahmansfood.fragments;
 
 import android.os.Bundle;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,9 +21,7 @@ import com.example.rahmansfood.CrudSecondPartActivity;
 import com.example.rahmansfood.R;
 import com.example.rahmansfood.api.ProduitApiService;
 import com.example.rahmansfood.models.Type;
-import com.example.rahmansfood.models.TypeResponse;
 
-import java.util.Arrays;
 import java.util.List;
 
 import retrofit2.Call;
@@ -40,17 +36,16 @@ public class GestionCreateFragment extends Fragment {
     private String type;
 
     private TextView title2;
-
     private EditText editNom, editMasse, editPrix;
     private Spinner spinnerType;
     private Button btnReset, btnAdd;
     private LinearLayout buttonLayout;
 
+    private List<Type> typeList;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_gestion_create, container, false);
     }
 
@@ -58,21 +53,7 @@ public class GestionCreateFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("http://192.168.1.155/rahmanfood_api/") // Remplace par ton IP/URL
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        ProduitApiService service = retrofit.create(ProduitApiService.class);
-
         title2 = view.findViewById(R.id.titleText);
-
-        // Récupérer les arguments
-        if (getArguments() != null) {
-            title = getArguments().getString("title");
-            type = getArguments().getString("type");
-        }
-
         editNom = view.findViewById(R.id.editNom);
         editMasse = view.findViewById(R.id.editMasse);
         editPrix = view.findViewById(R.id.editPrix);
@@ -81,65 +62,149 @@ public class GestionCreateFragment extends Fragment {
         btnAdd = view.findViewById(R.id.btnAdd);
         buttonLayout = view.findViewById(R.id.buttonLayout);
 
-        if (title != null) {
-            switch (type) {
-                case "ingredient":
-                    title2.setText("Ajouter un nouvel ingrédient à la liste");
-                    spinnerType.setVisibility(View.VISIBLE);
-                    editMasse.setVisibility(View.VISIBLE);
+        if (getArguments() != null) {
+            title = getArguments().getString("title");
+            type = getArguments().getString("type");
+        }
 
-                    Call<TypeResponse> call = service.getTypes();
-                    call.enqueue(new Callback<TypeResponse>() {
-                        @Override
-                        public void onResponse(Call<TypeResponse> call, Response<TypeResponse> response) {
-                            if (response.isSuccessful() && response.body() != null) {
-                                List<Type> types = response.body().getTypes();
+        btnReset.setOnClickListener(v -> {
+            resetInputs();
+        });
 
-                                ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                                        requireContext(),
-                                        android.R.layout.simple_spinner_item,
-                                        convertTypeListToStringList(types)
-                                );
-                                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                                spinnerType.setAdapter(adapter);
-                            } else {
-                                Toast.makeText(requireContext(), "Erreur lors de la récupération des types", Toast.LENGTH_SHORT).show();
-                            }
-                        }
+        if (title != null && "ingredient".equals(CrudSecondPartActivity.getType())) {
+            title2.setText("Ajouter un nouvel ingrédient à la liste");
+            editMasse.setVisibility(View.VISIBLE);
+            spinnerType.setVisibility(View.VISIBLE);
+            loadTypesFromApi();
 
-                        @Override
-                        public void onFailure(Call<TypeResponse> call, Throwable t) {
-                            Toast.makeText(requireContext(), "Erreur API : " + t.getMessage(), Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                    break;
+            btnAdd.setOnClickListener(v -> {
+                String nom = editNom.getText().toString().trim();
+                String masse = editMasse.getText().toString().trim();
+                Type selectedType = (Type) spinnerType.getSelectedItem();
 
-                case "supplement":
-                    title2.setText("Ajouter un nouveau supplément à la liste");
-                    editPrix.setVisibility(View.VISIBLE);
-                    break;
+                if (TextUtils.isEmpty(nom) || TextUtils.isEmpty(masse) || selectedType == null || "default".equals(selectedType.getId())) {
+                    Toast.makeText(requireContext(), "Veuillez remplir tous les champs", Toast.LENGTH_SHORT).show();
+                    return;
+                }
 
-                case "gratine":
-                    title2.setText("Ajouter un nouveau supplément gratiné à la liste");
-                    editPrix.setVisibility(View.VISIBLE);
-                    break;
+                String message = "Voulez-vous vraiment ajouter cet ingrédient ?\n\n" +
+                        "Nom : " + nom + "\n" +
+                        "Masse : " + masse + "\n" +
+                        "Type : " + selectedType.getNom();
 
-                default:
-                    title2.setText("Ajouter un élément");
-                    break;
-            }
+                new android.app.AlertDialog.Builder(requireContext())
+                        .setTitle("Confirmation")
+                        .setMessage(message)
+                        .setPositiveButton("Oui", (dialog, which) -> {
+                            Retrofit retrofit = new Retrofit.Builder()
+                                    .baseUrl("http://192.168.1.155/rahmanfood_api/")
+                                    .addConverterFactory(GsonConverterFactory.create())
+                                    .build();
+
+                            ProduitApiService service = retrofit.create(ProduitApiService.class);
+                            Call<Void> call = service.addIngredient(nom, masse, selectedType.getId());
+
+                            call.enqueue(new Callback<Void>() {
+                                @Override
+                                public void onResponse(Call<Void> call, Response<Void> response) {
+                                    if (response.isSuccessful()) {
+                                        showAlert("Succès", "Ingrédient ajouté avec succès");
+                                        resetInputs(); // Réinitialiser les champs
+                                    } else {
+                                        showAlert("Échec", "Erreur lors de l'ajout de l'ingrédient");
+                                    }
+                                }
+
+                                @Override
+                                public void onFailure(Call<Void> call, Throwable t) {
+                                    showAlert("Erreur de connexion", "Erreur de connexion : " + t.getMessage());
+                                }
+                            });
+                        })
+                        .setNegativeButton("Annuler", null)
+                        .show();
+            });
+
+        } else if ("supplement".equals(CrudSecondPartActivity.getType())) {
+            title2.setText("Ajouter un nouveau supplément à la liste");
+            editPrix.setVisibility(View.VISIBLE);
+
+        } else if ("gratine".equals(CrudSecondPartActivity.getType())) {
+            title2.setText("Ajouter un nouveau supplément gratiné à la liste");
+            editPrix.setVisibility(View.VISIBLE);
+
         } else {
             title2.setText("Ajouter un élément");
         }
     }
 
-    private List<String> convertTypeListToStringList(List<Type> typeList) {
-        List<String> names = new java.util.ArrayList<>();
-        for (Type t : typeList) {
-            names.add(t.getNom());
-        }
-        return names;
+    private void loadTypesFromApi() {
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("http://192.168.1.155/rahmanfood_api/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        ProduitApiService service = retrofit.create(ProduitApiService.class);
+        Call<List<Type>> call = service.getTypes();
+
+        call.enqueue(new Callback<List<Type>>() {
+            @Override
+            public void onResponse(Call<List<Type>> call, Response<List<Type>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    typeList = response.body();
+
+                    Type defaultType = new Type();
+                    defaultType.setId("default");
+                    defaultType.setNom("Sélectionner un type");
+                    typeList.add(0, defaultType);
+
+                    ArrayAdapter<Type> adapter = new ArrayAdapter<Type>(
+                            requireContext(),
+                            android.R.layout.simple_spinner_item,
+                            typeList
+                    ) {
+                        @NonNull
+                        @Override
+                        public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                            TextView view = (TextView) super.getView(position, convertView, parent);
+                            view.setText(typeList.get(position).getNom());
+                            return view;
+                        }
+
+                        @Override
+                        public View getDropDownView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                            TextView view = (TextView) super.getDropDownView(position, convertView, parent);
+                            view.setText(typeList.get(position).getNom());
+                            return view;
+                        }
+                    };
+                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    spinnerType.setAdapter(adapter);
+
+                } else {
+                    Toast.makeText(requireContext(), "Erreur de chargement des types", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Type>> call, Throwable t) {
+                Toast.makeText(requireContext(), "Erreur API : " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
+    private void showAlert(String title, String message) {
+        new android.app.AlertDialog.Builder(requireContext())
+                .setTitle(title)
+                .setMessage(message)
+                .setPositiveButton("OK", null)
+                .show();
+    }
 
+    private void resetInputs() {
+        editPrix.setText("");
+        editNom.setText("");
+        editMasse.setText("");
+        spinnerType.setSelection(0);
+    }
 }

@@ -1,10 +1,13 @@
 package com.example.rahmansfood.models;
 
+import com.google.gson.annotations.SerializedName;
+
 public class Type {
     private String id;
+
+    @SerializedName("type")
     private String nom;
 
-    // Getters et Setters
     public String getId() {
         return id;
     }
