@@ -3,7 +3,6 @@ package com.example.rahmansfood.fragments;
 import android.app.AlertDialog;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,21 +11,22 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.widget.SearchView;
 import androidx.cardview.widget.CardView;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import androidx.appcompat.widget.SearchView;
+
 import com.example.rahmansfood.R;
 import com.example.rahmansfood.adapters.HomeFragmentAdapter;
 import com.example.rahmansfood.api.ProduitApiService;
+import com.example.rahmansfood.models.ApiClient;
 import com.example.rahmansfood.models.ApiResponse;
 import com.example.rahmansfood.models.Produit;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -48,15 +48,15 @@ public class HomeFragment extends Fragment {
 
     private CardView pizza_card, burger_card, tex_mex_card, dessert_card, boisson_card, tacos_card, sandwich_card, all_card, assiette_card;
 
-    private AtomicBoolean pizza_card_selected = new AtomicBoolean(false);
-    private AtomicBoolean burger_card_selected = new AtomicBoolean(false);
-    private AtomicBoolean tex_mex_card_selected = new AtomicBoolean(false);
-    private AtomicBoolean dessert_card_selected = new AtomicBoolean(false);
-    private AtomicBoolean boisson_card_selected = new AtomicBoolean(false);
-    private AtomicBoolean tacos_card_selected = new AtomicBoolean(false);
-    private AtomicBoolean sandwich_card_selected = new AtomicBoolean(false);
-    private AtomicBoolean all_card_selected = new AtomicBoolean(false);
-    private AtomicBoolean assiette_card_selected = new AtomicBoolean(false);
+    private final AtomicBoolean pizza_card_selected = new AtomicBoolean(false);
+    private final AtomicBoolean burger_card_selected = new AtomicBoolean(false);
+    private final AtomicBoolean tex_mex_card_selected = new AtomicBoolean(false);
+    private final AtomicBoolean dessert_card_selected = new AtomicBoolean(false);
+    private final AtomicBoolean boisson_card_selected = new AtomicBoolean(false);
+    private final AtomicBoolean tacos_card_selected = new AtomicBoolean(false);
+    private final AtomicBoolean sandwich_card_selected = new AtomicBoolean(false);
+    private final AtomicBoolean all_card_selected = new AtomicBoolean(false);
+    private final AtomicBoolean assiette_card_selected = new AtomicBoolean(false);
 
     public HomeFragment() {}
 
@@ -95,7 +95,6 @@ public class HomeFragment extends Fragment {
         all_card.setOnClickListener(v -> selectCategoryAndReload(all_card, all_card_selected, "all"));
         assiette_card.setOnClickListener(v -> selectCategoryAndReload(assiette_card, assiette_card_selected, "assiette"));
 
-        // Recherche
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
@@ -110,7 +109,7 @@ public class HomeFragment extends Fragment {
             }
         });
 
-        // Sélection par défaut
+        // Load "all" products by default
         selectCategoryAndReload(all_card, all_card_selected, "all");
     }
 
@@ -142,35 +141,48 @@ public class HomeFragment extends Fragment {
     }
 
     private void reloadData(String category) {
+        if (!isAdded()) return;
+
         loadingProgressBar.setVisibility(View.VISIBLE);
 
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("http://192.168.1.155/rahmanfood_api/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
+        try {
+            Retrofit retrofit = ApiClient.getClient(getContext());
+            ProduitApiService service = retrofit.create(ProduitApiService.class);
+            Call<Object> call = (Call<Object>) getCallBasedOnCategory(service, category);
 
-        ProduitApiService service = retrofit.create(ProduitApiService.class);
-        Call<Object> call = (Call<Object>) getCallBasedOnCategory(service, category);
+            call.enqueue(new Callback<>() {
+                @Override
+                public void onResponse(Call<Object> call, Response<Object> response) {
+                    if (!isAdded()) return;
+                    loadingProgressBar.setVisibility(View.GONE);
 
-        call.enqueue(new Callback<>() {
-            @Override
-            public void onResponse(Call<Object> call, Response<Object> response) {
-                loadingProgressBar.setVisibility(View.GONE);
-
-                if (response.isSuccessful() && response.body() != null) {
-                    handleResponse(response);
-                } else {
-                    Toast.makeText(getContext(), "Erreur serveur : " + response.code(), Toast.LENGTH_SHORT).show();
+                    if (response.isSuccessful() && response.body() != null) {
+                        handleResponse(response);
+                    } else {
+                        String errorMsg = "Erreur serveur";
+                        if (response.errorBody() != null) {
+                            try {
+                                errorMsg += ": " + response.errorBody().string();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        Toast.makeText(getContext(), errorMsg, Toast.LENGTH_SHORT).show();
+                    }
                 }
-            }
 
-            @Override
-            public void onFailure(Call<Object> call, Throwable t) {
-                loadingProgressBar.setVisibility(View.GONE);
-                if (!isAdded()) return;
-                showErrorDialog(t.getMessage(), category);
-            }
-        });
+                @Override
+                public void onFailure(Call<Object> call, Throwable t) {
+                    if (!isAdded()) return;
+                    loadingProgressBar.setVisibility(View.GONE);
+                    showErrorDialog(t.getMessage(), category);
+                }
+            });
+        } catch (Exception e) {
+            loadingProgressBar.setVisibility(View.GONE);
+            Toast.makeText(getContext(), "Erreur de configuration: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            e.printStackTrace();
+        }
     }
 
     private Call<?> getCallBasedOnCategory(ProduitApiService service, String category) {
@@ -188,35 +200,60 @@ public class HomeFragment extends Fragment {
     }
 
     private void handleResponse(Response<Object> response) {
-        if (response.body() instanceof ApiResponse) {
-            ApiResponse apiResponse = (ApiResponse) response.body();
-            displayProducts(apiResponse.getData());
-        } else if (response.body() instanceof List) {
-            List<Produit> produits = (List<Produit>) response.body();
-            displayProducts(produits);
+        try {
+            if (response.body() instanceof ApiResponse) {
+                ApiResponse apiResponse = (ApiResponse) response.body();
+                if (apiResponse != null && apiResponse.getData() != null) {
+                    displayProducts(apiResponse.getData());
+                }
+            } else if (response.body() instanceof List) {
+                @SuppressWarnings("unchecked")
+                List<Produit> produits = (List<Produit>) response.body();
+                displayProducts(produits);
+            } else {
+                Toast.makeText(getContext(), "Format de réponse inattendu", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Toast.makeText(getContext(), "Erreur de traitement des données", Toast.LENGTH_SHORT).show();
+            e.printStackTrace();
         }
     }
 
     private void displayProducts(List<Produit> produits) {
-        if (produits != null && !produits.isEmpty()) {
-            allProduits = produits;
-            adapter = new HomeFragmentAdapter(allProduits);
-            recyclerViewProduits.setAdapter(adapter);
-        } else {
-            Toast.makeText(getContext(), "Aucun produit trouvé", Toast.LENGTH_SHORT).show();
-        }
+        if (!isAdded()) return;
+
+        requireActivity().runOnUiThread(() -> {
+            if (produits != null && !produits.isEmpty()) {
+                allProduits = produits;
+                adapter = new HomeFragmentAdapter(allProduits);
+                recyclerViewProduits.setAdapter(adapter);
+            } else {
+                Toast.makeText(getContext(), "Aucun produit trouvé", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void showErrorDialog(String message, String category) {
         requireActivity().runOnUiThread(() -> {
             if (!isAdded()) return;
+
             new AlertDialog.Builder(requireContext())
-                    .setTitle("Erreur")
-                    .setMessage("Une erreur est survenue :\n" + message)
+                    .setTitle("Erreur de connexion")
+                    .setMessage("Impossible de se connecter au serveur.\n\n" + message)
                     .setCancelable(false)
                     .setPositiveButton("Recharger", (dialog, which) -> reloadData(category))
+                    .setNeutralButton("Configurer", (dialog, which) -> navigateToSettings())
                     .setNegativeButton("Quitter", (dialog, which) -> requireActivity().finish())
                     .show();
         });
+    }
+
+    private void navigateToSettings() {
+        requireActivity()
+                .getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.nav_host_fragment, new SettingsFragment())
+                .addToBackStack(null)
+                .commit();
     }
 }

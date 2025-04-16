@@ -14,6 +14,7 @@ import com.example.rahmansfood.fragments.CreateFragment;
 import com.example.rahmansfood.fragments.HomeFragment;
 import com.example.rahmansfood.fragments.SettingsFragment;
 import com.example.rahmansfood.fragments.StatsFragment;
+import com.example.rahmansfood.fragments.StocksFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class MainActivity extends AppCompatActivity {
@@ -43,6 +44,8 @@ public class MainActivity extends AppCompatActivity {
                 selectedFragment = new StatsFragment();
             } else if (itemId == R.id.nav_settings) {
                 selectedFragment = new SettingsFragment();
+            } else if (itemId == R.id.nav_stocks){
+                selectedFragment = new StocksFragment();
             }
             if (selectedFragment != null) {
                 getSupportFragmentManager().beginTransaction().replace(R.id.nav_host_fragment, selectedFragment).commit();

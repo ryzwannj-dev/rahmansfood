@@ -49,15 +49,15 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/_25sdp"
         android:backgroundTint="@color/orange"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/title"
         app:tabIndicatorColor="@color/white"
-        app:tabIndicatorHeight="3dp"
-        app:tabSelectedTextColor="@color/white"
-        app:tabTextColor="@color/white"
         app:tabIndicatorFullWidth="false"
         app:tabIndicatorGravity="bottom"
-        app:layout_constraintTop_toBottomOf="@+id/title"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:tabIndicatorHeight="3dp"
+        app:tabSelectedTextColor="@color/white"
+        app:tabTextColor="@color/white">
 
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
@@ -73,7 +73,7 @@
     <FrameLayout
         android:id="@+id/frameLayout"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
         android:layout_marginStart="1dp"
         android:layout_marginEnd="1dp"
         android:layout_marginBottom="2dp"

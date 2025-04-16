@@ -20,6 +20,7 @@ import android.widget.Toast;
 import com.example.rahmansfood.CrudSecondPartActivity;
 import com.example.rahmansfood.R;
 import com.example.rahmansfood.api.ProduitApiService;
+import com.example.rahmansfood.models.ApiClient;
 import com.example.rahmansfood.models.Type;
 
 import java.util.List;
@@ -96,11 +97,7 @@ public class GestionCreateFragment extends Fragment {
                         .setTitle("Confirmation")
                         .setMessage(message)
                         .setPositiveButton("Oui", (dialog, which) -> {
-                            Retrofit retrofit = new Retrofit.Builder()
-                                    .baseUrl("http://192.168.1.155/rahmanfood_api/")
-                                    .addConverterFactory(GsonConverterFactory.create())
-                                    .build();
-
+                            Retrofit retrofit = ApiClient.getClient(getContext());
                             ProduitApiService service = retrofit.create(ProduitApiService.class);
                             Call<Void> call = service.addIngredient(nom, masse, selectedType.getId());
 
@@ -154,14 +151,9 @@ public class GestionCreateFragment extends Fragment {
                         .setTitle("Confirmation")
                         .setMessage(message)
                         .setPositiveButton("Oui", (dialog, which) -> {
-                            Retrofit retrofit = new Retrofit.Builder()
-                                    .baseUrl("http://192.168.1.155/rahmanfood_api/")
-                                    .addConverterFactory(GsonConverterFactory.create())
-                                    .build();
-
+                            Retrofit retrofit = ApiClient.getClient(getContext());
                             ProduitApiService service = retrofit.create(ProduitApiService.class);
                             Call<Void> call = service.addIngredient(nom, prix);
-
                             call.enqueue(new Callback<Void>() {
                                 @Override
                                 public void onResponse(Call<Void> call, Response<Void> response) {
@@ -214,11 +206,7 @@ public class GestionCreateFragment extends Fragment {
                         .setTitle("Confirmation")
                         .setMessage(message)
                         .setPositiveButton("Oui", (dialog, which) -> {
-                            Retrofit retrofit = new Retrofit.Builder()
-                                    .baseUrl("http://192.168.1.155/rahmanfood_api/")
-                                    .addConverterFactory(GsonConverterFactory.create())
-                                    .build();
-
+                            Retrofit retrofit = ApiClient.getClient(getContext());
                             ProduitApiService service = retrofit.create(ProduitApiService.class);
                             Call<Void> call = service.addSupplementGratine(nom, prix); // Ajoute cette méthode dans ton interface
 
@@ -249,11 +237,7 @@ public class GestionCreateFragment extends Fragment {
     }
 
     private void loadTypesFromApi() {
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("http://192.168.1.155/rahmanfood_api/")
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
+        Retrofit retrofit = ApiClient.getClient(getContext());
         ProduitApiService service = retrofit.create(ProduitApiService.class);
         Call<List<Type>> call = service.getTypes();
 

@@ -1,9 +1,10 @@
 package com.example.rahmansfood.api;
 
-import com.example.rahmansfood.models.ApiResponse;
+import com.example.rahmansfood.models.GratineEach;
+import com.example.rahmansfood.models.IngredientEach;
 import com.example.rahmansfood.models.Produit;
+import com.example.rahmansfood.models.SupplementEach;
 import com.example.rahmansfood.models.Type;
-import com.example.rahmansfood.models.TypeResponse;
 
 import java.util.List;
 
@@ -14,6 +15,7 @@ import retrofit2.http.GET;
 import retrofit2.http.POST;
 
 public interface ProduitApiService {
+
     @GET("get_all_products")
     Call<List<Produit>> getAllProduits();
 
@@ -66,5 +68,13 @@ public interface ProduitApiService {
             @Field("prix") float prix
     );
 
+    @GET("get_ingredients")
+    Call<List<IngredientEach>> getAllIngredients();
+
+    @GET("get_all_supplements")
+    Call<List<SupplementEach>> getAllSupplements();
+
+    @GET("get_all_supplements_gratine")
+    Call<List<GratineEach>> getAllGratine();
 
 }
