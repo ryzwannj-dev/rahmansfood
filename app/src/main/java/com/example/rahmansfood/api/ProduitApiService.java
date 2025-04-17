@@ -77,4 +77,17 @@ public interface ProduitApiService {
     @GET("get_all_supplements_gratine")
     Call<List<GratineEach>> getAllGratine();
 
+    @FormUrlEncoded
+    @POST("delete_ingredient")
+    Call<Void> deleteIngredient(@Field("delete") String id);
+
+    @POST("delete_supplement")
+    @retrofit2.http.FormUrlEncoded
+    Call<Void> deleteSupplement(@retrofit2.http.Field("id") String id);
+
+    @POST("delete_supplement_gratine")
+    @retrofit2.http.FormUrlEncoded
+    Call<Void> deleteGratine(@retrofit2.http.Field("id") String id);
+
+
 }

@@ -1,14 +1,13 @@
 package com.example.rahmansfood.adapters;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AlphaAnimation;
-import android.view.animation.Animation;
-import android.view.animation.Transformation;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -17,21 +16,35 @@ import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.rahmansfood.R;
+import com.example.rahmansfood.api.ProduitApiService;
+import com.example.rahmansfood.models.ApiClient;
 import com.example.rahmansfood.models.GratineEach;
 import com.example.rahmansfood.models.IngredientEach;
 import com.example.rahmansfood.models.SupplementEach;
 
 import java.util.List;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+
 public class CrudFragmentAdapter extends RecyclerView.Adapter<CrudFragmentAdapter.ViewHolder> {
 
-    private List<Object> itemList;
-    private String type;
+    private final List<Object> itemList;
+    private final String type;
     private int expandedPosition = -1;
+    private Context context;
+    private OnItemDeletedListener itemDeletedListener;
 
-    public CrudFragmentAdapter(List<Object> itemList, String type) {
+    public CrudFragmentAdapter(Context context, List<Object> itemList, String type) {
+        this.context = context;
         this.itemList = itemList;
         this.type = type;
+    }
+
+    public void setOnItemDeletedListener(OnItemDeletedListener listener) {
+        this.itemDeletedListener = listener;
     }
 
     @NonNull
@@ -46,60 +59,54 @@ public class CrudFragmentAdapter extends RecyclerView.Adapter<CrudFragmentAdapte
         Object item = itemList.get(position);
         boolean isExpanded = position == expandedPosition;
 
-        setupMarqueeEffect(holder.tvName);
-
-        // Réinitialiser la visibilité par défaut
-        holder.expandableLayoutButton.clearAnimation(); // <- important !
-        holder.expandableLayoutButton.getLayoutParams().height = ViewGroup.LayoutParams.WRAP_CONTENT;
         holder.expandableLayoutButton.setVisibility(isExpanded ? View.VISIBLE : View.GONE);
+        holder.expandableLayoutButton.clearAnimation();
+        holder.expandableLayoutButton.getLayoutParams().height = ViewGroup.LayoutParams.WRAP_CONTENT;
 
-        if ("ingredient".equals(type) && item instanceof IngredientEach) {
-            IngredientEach ingredient = (IngredientEach) item;
-            holder.tvName.setText(ingredient.getNom());
-            holder.tvInfo1.setText(ingredient.getMasse() + "g");
-            holder.tvInfo2.setText(ingredient.getType_ingredient());
+        setupMarquee(holder.tvName);
+
+        if (type.equals("ingredient") && item instanceof IngredientEach) {
+            IngredientEach ing = (IngredientEach) item;
+            holder.tvName.setText(ing.getNom());
+            holder.tvInfo1.setText(ing.getMasse() + "g");
+            holder.tvInfo2.setText(ing.getType_ingredient());
             holder.tvInfo1.setVisibility(View.VISIBLE);
             holder.tvInfo2.setVisibility(View.VISIBLE);
-
-        } else if ("supplement".equals(type) && item instanceof SupplementEach) {
-            SupplementEach supplement = (SupplementEach) item;
-            holder.tvName.setText(supplement.getNom());
-            holder.tvInfo1.setText(supplement.getPrix() + "€");
+        } else if (type.equals("supplement") && item instanceof SupplementEach) {
+            SupplementEach sup = (SupplementEach) item;
+            holder.tvName.setText(sup.getNom());
+            holder.tvInfo1.setText(sup.getPrix() + "€");
             holder.tvInfo1.setVisibility(View.VISIBLE);
             holder.tvInfo2.setVisibility(View.GONE);
-
-        } else if ("gratine".equals(type) && item instanceof GratineEach) {
-            GratineEach gratine = (GratineEach) item;
-            holder.tvName.setText(gratine.getNom());
+        } else if (type.equals("gratine") && item instanceof GratineEach) {
+            GratineEach grat = (GratineEach) item;
+            holder.tvName.setText(grat.getNom());
             holder.tvInfo1.setVisibility(View.GONE);
-            holder.tvInfo2.setText(gratine.getPrix() + "€");
+            holder.tvInfo2.setText(grat.getPrix() + "€");
             holder.tvInfo2.setVisibility(View.VISIBLE);
         }
 
-        // Appliquer ou non l'expansion (sans animation)
         if (isExpanded) {
-            holder.expandableLayoutButton.setVisibility(View.VISIBLE);
-            fadeInButtons(holder.expandableLayoutButton); // animation douce seulement ici
-        } else {
-            holder.expandableLayoutButton.setVisibility(View.GONE);
+            fadeInButtons(holder.expandableLayoutButton);
         }
 
-        // Gérer clic pour toggle
         holder.cardView.setOnClickListener(v -> {
-            int previousExpanded = expandedPosition;
-            if (isExpanded) {
-                expandedPosition = -1;
-                notifyItemChanged(position);
-            } else {
-                expandedPosition = position;
-                notifyItemChanged(position);
-                if (previousExpanded != -1) {
-                    notifyItemChanged(previousExpanded);
-                }
+            int previous = expandedPosition;
+            expandedPosition = isExpanded ? -1 : position;
+            notifyItemChanged(position);
+            if (previous != -1) notifyItemChanged(previous);
+        });
+
+        holder.btnDelete.setOnClickListener(v -> {
+            if (type.equals("ingredient") && item instanceof IngredientEach) {
+                deleteIngredientFromApi(((IngredientEach) item).getId(), position);
+            } else if (type.equals("supplement") && item instanceof SupplementEach) {
+                deleteSupplementFromApi(((SupplementEach) item).getId(), position);
+            } else if (type.equals("gratine") && item instanceof GratineEach) {
+                deleteGratineFromApi(((GratineEach) item).getId(), position);
             }
         });
     }
-
 
     @Override
     public int getItemCount() {
@@ -124,76 +131,81 @@ public class CrudFragmentAdapter extends RecyclerView.Adapter<CrudFragmentAdapte
         }
     }
 
-    private void setupMarqueeEffect(TextView textView) {
-        textView.setSelected(true);
-        textView.setSingleLine(true);
-        textView.setEllipsize(TextUtils.TruncateAt.MARQUEE);
-        textView.setMarqueeRepeatLimit(-1);
-        textView.setHorizontallyScrolling(true);
+    private void setupMarquee(TextView tv) {
+        tv.setSelected(true);
+        tv.setSingleLine(true);
+        tv.setEllipsize(TextUtils.TruncateAt.MARQUEE);
+        tv.setMarqueeRepeatLimit(-1);
+        tv.setHorizontallyScrolling(true);
     }
 
-    // Animation d’apparition
-    private void expand(View v) {
-        v.setVisibility(View.VISIBLE);
-        v.measure(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        final int targetHeight = v.getMeasuredHeight();
-
-        v.getLayoutParams().height = 0;
-        v.requestLayout();
-
-        Animation a = new Animation() {
-            @Override
-            protected void applyTransformation(float interpolatedTime, Transformation t) {
-                v.getLayoutParams().height = interpolatedTime == 1
-                        ? ViewGroup.LayoutParams.WRAP_CONTENT
-                        : (int) (targetHeight * interpolatedTime);
-                v.requestLayout();
-            }
-
-            @Override
-            public boolean willChangeBounds() {
-                return true;
-            }
-        };
-
-        a.setDuration((int) (targetHeight / v.getContext().getResources().getDisplayMetrics().density));
-        v.startAnimation(a);
-        fadeInButtons(v);
-    }
-
-    // Animation de disparition
-    private void collapse(View v) {
-        final int initialHeight = v.getMeasuredHeight();
-
-        Animation a = new Animation() {
-            @Override
-            protected void applyTransformation(float interpolatedTime, Transformation t) {
-                if (interpolatedTime == 1) {
-                    v.setVisibility(View.GONE);
-                } else {
-                    v.getLayoutParams().height = initialHeight - (int) (initialHeight * interpolatedTime);
-                    v.requestLayout();
-                }
-            }
-
-            @Override
-            public boolean willChangeBounds() {
-                return true;
-            }
-        };
-
-        a.setDuration((int) (initialHeight / v.getContext().getResources().getDisplayMetrics().density));
-        v.startAnimation(a);
-    }
-
-    // Animation douce des boutons
-    private void fadeInButtons(View v) {
-        for (int i = 0; i < ((ViewGroup) v).getChildCount(); i++) {
-            View child = ((ViewGroup) v).getChildAt(i);
+    private void fadeInButtons(View layout) {
+        for (int i = 0; i < ((ViewGroup) layout).getChildCount(); i++) {
+            View child = ((ViewGroup) layout).getChildAt(i);
             AlphaAnimation anim = new AlphaAnimation(0f, 1f);
             anim.setDuration(300);
             child.startAnimation(anim);
             child.setVisibility(View.VISIBLE);
         }
+    }
+
+    private void notifyItemDeleted(int position) {
+        itemList.remove(position);
+        notifyItemRemoved(position);
+        notifyItemRangeChanged(position, itemList.size());
+        if (itemDeletedListener != null) {
+            itemDeletedListener.onItemDeleted(itemList.size());
+        }
+    }
+
+    private void deleteIngredientFromApi(String id, int position) {
+        Retrofit retrofit = ApiClient.getClient(context);
+        ProduitApiService service = retrofit.create(ProduitApiService.class);
+
+        service.deleteIngredient(id).enqueue(new Callback<Void>() {
+            @Override public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    notifyItemDeleted(position);
+                }
+            }
+
+            @Override public void onFailure(Call<Void> call, Throwable t) {
+                Log.e("API", "Échec suppression ingrédient", t);
+            }
+        });
+    }
+
+    private void deleteSupplementFromApi(String id, int position) {
+        Retrofit retrofit = ApiClient.getClient(context);
+        ProduitApiService service = retrofit.create(ProduitApiService.class);
+
+        service.deleteSupplement(id).enqueue(new Callback<Void>() {
+            @Override public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    notifyItemDeleted(position);
+                }
+            }
+
+            @Override public void onFailure(Call<Void> call, Throwable t) {
+                Log.e("API", "Échec suppression supplément", t);
+            }
+        });
+    }
+
+    private void deleteGratineFromApi(String id, int position) {
+        Retrofit retrofit = ApiClient.getClient(context);
+        ProduitApiService service = retrofit.create(ProduitApiService.class);
+
+        service.deleteGratine(id).enqueue(new Callback<Void>() {
+            @Override public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    notifyItemDeleted(position);
+                }
+            }
+
+            @Override public void onFailure(Call<Void> call, Throwable t) {
+                Log.e("API", "Échec suppression gratiné", t);
+            }
+        });
     }
 }
